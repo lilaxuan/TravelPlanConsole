@@ -204,3 +204,190 @@ a {
     text-align: left;
   }
 }
+
+.booking-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.price {
+  white-space: nowrap;
+  font-size: 1.1rem;
+}
+
+.restaurant-card {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.restaurant-card:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+
+.restaurant-photo {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.restaurant-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Wizard step indicator */
+.wizard-steps {
+  display: flex;
+  gap: 0;
+  margin-bottom: 28px;
+  counter-reset: step;
+}
+
+.wizard-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  position: relative;
+}
+
+.wizard-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: #e5e7eb;
+  z-index: 0;
+}
+
+.wizard-step.done:not(:last-child)::after {
+  background: #2563eb;
+}
+
+.wizard-step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  z-index: 1;
+  position: relative;
+}
+
+.wizard-step.active .wizard-step-dot {
+  background: #2563eb;
+  color: white;
+}
+
+.wizard-step.done .wizard-step-dot {
+  background: #16a34a;
+  color: white;
+}
+
+.wizard-step.active span,
+.wizard-step.done span {
+  color: #111827;
+}
+
+/* Selectable card */
+.selectable-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  transition: border-color 0.15s;
+}
+
+.selectable-card:hover {
+  border-color: #2563eb;
+}
+
+/* Back button */
+.back-button {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: #374151;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background: #f3f4f6;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: white;
+  border-radius: 18px;
+  padding: 32px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.selectable-card--selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.selected-badge {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: #2563eb;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 700;
+  vertical-align: middle;
+}

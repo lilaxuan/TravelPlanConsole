@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getTrip } from '@/api/trips';
+import { flightSearchUrls, hotelSearchUrls } from '@/api/bookingUrls';
+import { ItineraryMap } from '@/features/trip/components/ItineraryMap';
 import { RecommendationList } from '@/features/trip/components/RecommendationList';
 import { TripSummaryCard } from '@/features/trip/components/TripSummaryCard';
 import type { TripResult } from '@/types/trip';
@@ -25,101 +27,129 @@ export function TripResultsPage(): React.ReactElement {
     })();
   }, [tripId]);
 
-  if (loading) {
-    return <div className="card">Loading trip plan…</div>;
-  }
+  if (loading) return <div className="card">Loading trip plan…</div>;
 
   if (error || !trip) {
     return (
       <div className="card">
         <p>{error ?? 'Trip not found.'}</p>
-        <Link className="inline-link" to="/">
-          Back to planner
-        </Link>
+        <Link className="inline-link" to="/">Back to planner</Link>
       </div>
     );
   }
 
+  const { request } = trip;
+
   return (
     <div className="results-layout">
-      <TripSummaryCard request={trip.request} costSummary={trip.costSummary} />
+      <TripSummaryCard request={request} costSummary={trip.costSummary} />
 
       <RecommendationList title="Flights">
-        {trip.flights.map((flight) => (
-          <article className="result-item" key={`${flight.provider}-${flight.title}`}>
-            <div>
-              <strong>{flight.title}</strong>
-              <p className="muted">{flight.provider} · {flight.duration}</p>
-            </div>
-            <div className="result-actions">
-              <strong>${flight.estimatedPrice}</strong>
-              <a href={flight.bookingUrl} rel="noreferrer" target="_blank">
-                Book
-              </a>
-            </div>
-          </article>
-        ))}
+        {trip.flights.map((flight) => {
+          const urls = flightSearchUrls({
+            from: request.departureIata ?? request.departureCity,
+            to: request.destinationIata ?? request.destinationCity,
+            date: request.startDate,
+            returnDate: request.endDate,
+            travelers: request.travelers,
+            airline: flight.airline,
+          });
+          return (
+            <article className="result-item" key={`${flight.airline}-${flight.flightNumber}`}>
+              <div>
+                <strong>{flight.airline} · {flight.flightNumber}</strong>
+                <p className="muted">{flight.departure} → {flight.arrival} · {flight.duration} · {flight.stops}</p>
+                <div className="booking-links">
+                  <span className="muted">Search on: </span>
+                  <a href={urls.google} rel="noreferrer" target="_blank">Google Flights</a>
+                  <a href={urls.kayak} rel="noreferrer" target="_blank">Kayak</a>
+                  <a href={urls.expedia} rel="noreferrer" target="_blank">Expedia</a>
+                  <a href={urls.skyscanner} rel="noreferrer" target="_blank">Skyscanner</a>
+                </div>
+              </div>
+              <strong className="price">${flight.estimatedPrice}</strong>
+            </article>
+          );
+        })}
       </RecommendationList>
 
       <RecommendationList title="Hotels">
-        {trip.hotels.map((hotel) => (
-          <article className="result-item" key={hotel.name}>
-            <div>
-              <strong>{hotel.name}</strong>
-              <p className="muted">{hotel.area}</p>
-            </div>
-            <div className="result-actions">
-              <strong>${hotel.totalEstimatedPrice}</strong>
-              <a href={hotel.bookingUrl} rel="noreferrer" target="_blank">
-                Reserve
-              </a>
-            </div>
-          </article>
-        ))}
+        {trip.hotels.map((hotel) => {
+          const urls = hotelSearchUrls({
+            name: hotel.name,
+            destination: request.destinationCity,
+            checkIn: request.startDate,
+            checkOut: request.endDate,
+            guests: request.travelers,
+          });
+          return (
+            <article className="result-item" key={hotel.name}>
+              <div>
+                <strong>{hotel.name}</strong>
+                <p className="muted">{'★'.repeat(hotel.starRating)} · {hotel.area}</p>
+                <p className="muted">{hotel.highlights}</p>
+                <div className="booking-links">
+                  <span className="muted">Book on: </span>
+                  <a href={urls.booking} rel="noreferrer" target="_blank">Booking.com</a>
+                  <a href={urls.hotels} rel="noreferrer" target="_blank">Hotels.com</a>
+                  <a href={urls.expedia} rel="noreferrer" target="_blank">Expedia</a>
+                  <a href={urls.airbnb} rel="noreferrer" target="_blank">Airbnb</a>
+                </div>
+              </div>
+              <div className="result-actions">
+                <strong>${hotel.estimatedNightlyPrice}/night</strong>
+                <span className="muted">~${hotel.totalEstimatedPrice} total</span>
+              </div>
+            </article>
+          );
+        })}
       </RecommendationList>
 
       <RecommendationList title="Daily itinerary">
-        {trip.itinerary.map((day) => (
-          <article className="itinerary-day" key={day.dayNumber}>
-            <h3>
-              Day {day.dayNumber}: {day.theme}
-            </h3>
-            <ul>
-              {day.activities.map((activity) => (
-                <li key={`${day.dayNumber}-${activity.time}-${activity.name}`}>
-                  <strong>{activity.time}</strong> — {activity.name}
-                  {activity.notes ? <span className="muted"> ({activity.notes})</span> : null}
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
+        <ItineraryMap itinerary={trip.itinerary} />
       </RecommendationList>
 
       <RecommendationList title="Restaurants">
-        {trip.restaurants.map((restaurant) => (
-          <article className="result-item" key={restaurant.name}>
-            <div>
-              <strong>{restaurant.name}</strong>
-              <p className="muted">
-                {restaurant.cuisine} · {restaurant.priceRange} · Reservation{' '}
-                {restaurant.reservationRecommended ? 'recommended' : 'optional'}
-              </p>
-            </div>
-            {restaurant.reservationUrl ? (
-              <a href={restaurant.reservationUrl} rel="noreferrer" target="_blank">
-                Reserve
-              </a>
-            ) : null}
-          </article>
-        ))}
+        {trip.restaurants.map((restaurant) => {
+          const photoUrl = `https://source.unsplash.com/400x200/?${encodeURIComponent(restaurant.photoQuery ?? restaurant.cuisine + ' restaurant food')}`;
+          return (
+            <article className="restaurant-card" key={restaurant.name}>
+              <img
+                src={photoUrl}
+                alt={restaurant.name}
+                className="restaurant-photo"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <div className="restaurant-info">
+                <div>
+                  <strong>{restaurant.name}</strong>
+                  <p className="muted">
+                    {restaurant.cuisine} · {restaurant.priceRange} · Reservation{' '}
+                    {restaurant.reservationRecommended ? 'recommended' : 'optional'}
+                  </p>
+                </div>
+                {restaurant.reservationUrl ? (
+                  <a href={restaurant.reservationUrl} rel="noreferrer" target="_blank">Reserve</a>
+                ) : null}
+              </div>
+            </article>
+          );
+        })}
       </RecommendationList>
 
       <RecommendationList title="Travel tips">
         <div className="stack">
+          {trip.travelTips.weatherSummary ? <p><strong>Weather:</strong> {trip.travelTips.weatherSummary}</p> : null}
+          {trip.travelTips.clothingRecommendations ? <p><strong>What to pack:</strong> {trip.travelTips.clothingRecommendations}</p> : null}
           <p><strong>Best season:</strong> {trip.travelTips.bestSeasonSummary}</p>
           <p><strong>Visa:</strong> {trip.travelTips.visaGuidance}</p>
           <p><strong>Local tip:</strong> {trip.travelTips.localTip}</p>
+          {trip.travelTips.preTravelReminders?.length ? (
+            <div>
+              <strong>Pre-travel reminders:</strong>
+              <ul>{trip.travelTips.preTravelReminders.map((r) => <li key={r}>{r}</li>)}</ul>
+            </div>
+          ) : null}
         </div>
       </RecommendationList>
 

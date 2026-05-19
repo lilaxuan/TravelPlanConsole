@@ -7,14 +7,18 @@ export interface TripFormValues {
   endDate: string;
   budget: number;
   travelers: number;
+  departureIata?: string;   // e.g. "SEA" — resolved by ChatGPT
+  destinationIata?: string; // e.g. "SFO"
 }
 
 export interface FlightOption {
-  provider: string;
-  title: string;
+  airline: string;
+  flightNumber: string;
+  departure: string;   // e.g. "SEA 08:30"
+  arrival: string;     // e.g. "SFO 10:40"
   estimatedPrice: number;
   duration: string;
-  bookingUrl: string;
+  stops: string;       // e.g. "Nonstop" or "1 stop via LAX"
 }
 
 export interface HotelOption {
@@ -22,7 +26,8 @@ export interface HotelOption {
   area: string;
   estimatedNightlyPrice: number;
   totalEstimatedPrice: number;
-  bookingUrl: string;
+  starRating: number;
+  highlights: string; // e.g. "Free breakfast, rooftop pool"
 }
 
 export interface CarRentalOption {
@@ -37,6 +42,9 @@ export interface Activity {
   name: string;
   type: string;
   notes?: string;
+  transportFromPrevious?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface ItineraryDay {
@@ -51,12 +59,16 @@ export interface RestaurantRecommendation {
   priceRange: string;
   reservationRecommended: boolean;
   reservationUrl?: string;
+  photoQuery?: string; // e.g. "ramen tokyo" — used to fetch a relevant photo
 }
 
 export interface TravelTips {
   bestSeasonSummary: string;
   visaGuidance: string;
   localTip: string;
+  weatherSummary?: string;
+  clothingRecommendations?: string;
+  preTravelReminders?: string[];
 }
 
 export interface CostSummary {
