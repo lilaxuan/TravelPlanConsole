@@ -26,13 +26,21 @@ export function HotelSelectStep({ hotels, request, selected, onSelect, onBack }:
             guests: request.travelers,
           });
           return (
-            <article key={hotel.name} className={`selectable-card ${isSelected ? 'selectable-card--selected' : ''}`}>
-              <div>
+            <article
+              key={hotel.name}
+              className={`selectable-card ${isSelected ? 'selectable-card--selected' : ''}`}
+              onClick={() => onSelect(hotel)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && onSelect(hotel)}
+            >
+              <div className="selectable-card-radio">{isSelected ? '●' : '○'}</div>
+              <div style={{ flex: 1 }}>
                 <strong>{hotel.name}</strong>
                 {isSelected && <span className="selected-badge">✓ Selected</span>}
                 <p className="muted">{'★'.repeat(hotel.starRating)} · {hotel.area}</p>
                 <p className="muted">{hotel.highlights}</p>
-                <div className="booking-links">
+                <div className="booking-links" onClick={(e) => e.stopPropagation()}>
                   <span className="muted">Book on: </span>
                   <a href={urls.booking} rel="noreferrer" target="_blank">Booking.com</a>
                   <a href={urls.hotels} rel="noreferrer" target="_blank">Hotels.com</a>
@@ -40,19 +48,23 @@ export function HotelSelectStep({ hotels, request, selected, onSelect, onBack }:
                   <a href={urls.airbnb} rel="noreferrer" target="_blank">Airbnb</a>
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                <div style={{ textAlign: 'right' }}>
-                  <strong style={{ fontSize: '1.1rem' }}>${hotel.estimatedNightlyPrice}/night</strong>
-                  <p className="muted">~${hotel.totalEstimatedPrice} total</p>
-                </div>
-                <button className="primary-button" onClick={() => onSelect(hotel)}>{isSelected ? 'Selected' : 'Select'}</button>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <strong className="card-price">${hotel.estimatedNightlyPrice}/night</strong>
+                <p className="muted" style={{ fontSize: '0.85rem' }}>~${hotel.totalEstimatedPrice} total</p>
               </div>
             </article>
           );
         })}
       </div>
 
-      <button className="back-button" onClick={onBack} style={{ marginTop: 16 }}>← Back</button>
+      <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+        <button className="back-button" onClick={onBack}>← Back</button>
+        {selected && (
+          <button className="cta-button" style={{ flex: 1 }} onClick={() => onSelect(selected)}>
+            Continue with {selected.name} →
+          </button>
+        )}
+      </div>
     </section>
   );
 }

@@ -11,47 +11,64 @@ interface TripFormProps {
 export function TripForm({ values, submitting, error, onChange, onSubmit }: TripFormProps): React.ReactElement {
   return (
     <form className="card trip-form" onSubmit={onSubmit}>
-      <div>
-        <h1>Plan a trip in minutes</h1>
-        <p className="muted">P0 supports a single departure city and a single destination city.</p>
+      <div className="form-heading">
+        <h1>Where are you going?</h1>
+        <p className="muted">Tell us your trip details and we'll build a full itinerary with flights, hotels, and more.</p>
       </div>
 
-      <div className="form-grid">
-        <label>
-          Departure city
-          <input name="departureCity" value={values.departureCity} onChange={onChange} placeholder="Seattle" />
+      {/* Route row */}
+      <div className="route-row">
+        <label className="route-field">
+          <span className="field-label">From</span>
+          <div className="input-icon-wrap">
+            <span className="input-icon">🛫</span>
+            <input name="departureCity" value={values.departureCity} onChange={onChange} placeholder="Seattle" />
+          </div>
         </label>
-
-        <label>
-          Destination city
-          <input name="destinationCity" value={values.destinationCity} onChange={onChange} placeholder="San Francisco" />
+        <div className="route-arrow">→</div>
+        <label className="route-field">
+          <span className="field-label">To</span>
+          <div className="input-icon-wrap">
+            <span className="input-icon">🛬</span>
+            <input name="destinationCity" value={values.destinationCity} onChange={onChange} placeholder="Tokyo" />
+          </div>
         </label>
+      </div>
 
+      {/* Details row */}
+      <div className="details-row">
         <label>
-          Start date
+          <span className="field-label">Depart</span>
           <input name="startDate" type="date" value={values.startDate} onChange={onChange} />
         </label>
-
         <label>
-          End date
+          <span className="field-label">Return</span>
           <input name="endDate" type="date" value={values.endDate} onChange={onChange} />
         </label>
-
         <label>
-          Budget (USD)
-          <input name="budget" type="number" min="1" value={values.budget} onChange={onChange} />
+          <span className="field-label">Budget (USD)</span>
+          <div className="input-icon-wrap">
+            <span className="input-icon">$</span>
+            <input name="budget" type="number" min="1" value={values.budget} onChange={onChange} />
+          </div>
         </label>
-
         <label>
-          Travelers
-          <input name="travelers" type="number" min="1" value={values.travelers} onChange={onChange} />
+          <span className="field-label">Travelers</span>
+          <div className="input-icon-wrap">
+            <span className="input-icon">👤</span>
+            <input name="travelers" type="number" min="1" value={values.travelers} onChange={onChange} />
+          </div>
         </label>
       </div>
 
       {error ? <div className="error-banner">{error}</div> : null}
 
-      <button className="primary-button" disabled={submitting} type="submit">
-        {submitting ? 'Generating trip…' : 'Generate trip'}
+      <button className="cta-button" disabled={submitting} type="submit">
+        {submitting ? (
+          <span className="cta-loading"><span className="spinner" />Generating your trip plan…</span>
+        ) : (
+          '✨ Generate my trip plan'
+        )}
       </button>
     </form>
   );

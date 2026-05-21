@@ -5,11 +5,12 @@ export function AppShell({ children }: PropsWithChildren): React.ReactElement {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div>
+        <div className="app-header-inner">
           <Link className="brand-link" to="/">
-            GoNow Console
+            <span className="brand-icon">✈</span>
+            GoNow
           </Link>
-          <p className="header-subtitle">Single-destination trip planning console</p>
+          <p className="header-subtitle">Plan your perfect trip with AI</p>
         </div>
       </header>
       <main className="app-main">{children}</main>

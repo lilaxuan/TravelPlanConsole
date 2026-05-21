@@ -1,5 +1,6 @@
 import { createTrip, getTrip } from '@/api/trips';
 import { TripForm } from '@/features/trip/components/TripForm';
+import { TripLoadingState } from '@/features/trip/components/TripLoadingState';
 import { FlightSelectStep } from '@/features/trip/components/FlightSelectStep';
 import { HotelSelectStep } from '@/features/trip/components/HotelSelectStep';
 import { CarRentalSelectStep } from '@/features/trip/components/CarRentalSelectStep';
@@ -46,15 +47,17 @@ export function TripWizardPage(): React.ReactElement {
         })}
       </div>
 
-      {state.step === 1 && (
+      {state.step === 1 && !state.loading && (
         <TripForm
           values={values}
           error={formError ?? state.error}
-          submitting={submitting || state.loading}
+          submitting={submitting}
           onChange={updateField}
           onSubmit={handleSubmit}
         />
       )}
+
+      {state.loading && <TripLoadingState />}
 
       {state.step === 2 && state.tripResult && (
         <FlightSelectStep

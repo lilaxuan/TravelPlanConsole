@@ -60,7 +60,7 @@ export function createMockTripResult(input: TripFormValues, tripId: string): Tri
       {
         provider: 'Hertz',
         estimatedTotalPrice: 290,
-        pickupLocation: `${input.destinationCity} Airport`,
+        pickupLocation: `${input.destinationCity} Airport Terminal 2`,
         bookingUrl: 'https://www.hertz.com/',
       },
       {

@@ -14,20 +14,27 @@ export function CarRentalSelectStep({ carRentals, selected, onSelect, onBack }: 
       <p className="muted">Add a rental car to your trip, or skip this step.</p>
 
       <div className="stack" style={{ marginTop: 16 }}>
-        {carRentals.map((car) => {
+        {carRentals.map((car, i) => {
           const isSelected = selected?.provider === car.provider && selected?.pickupLocation === car.pickupLocation;
           return (
-            <article key={`${car.provider}-${car.pickupLocation}`} className={`selectable-card ${isSelected ? 'selectable-card--selected' : ''}`}>
-              <div>
+            <article
+              key={i}
+              className={`selectable-card ${isSelected ? 'selectable-card--selected' : ''}`}
+              onClick={() => onSelect(car)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && onSelect(car)}
+            >
+              <div className="selectable-card-radio">{isSelected ? '●' : '○'}</div>
+              <div style={{ flex: 1 }}>
                 <strong>{car.provider}</strong>
                 {isSelected && <span className="selected-badge">✓ Selected</span>}
                 <p className="muted">Pickup: {car.pickupLocation}</p>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                <strong style={{ fontSize: '1.1rem' }}>${car.estimatedTotalPrice}</strong>
-                <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <strong className="card-price">${car.estimatedTotalPrice}</strong>
+                <div onClick={(e) => e.stopPropagation()}>
                   <a href={car.bookingUrl} rel="noreferrer" target="_blank" style={{ fontSize: '0.85rem' }}>Search</a>
-                  <button className="primary-button" onClick={() => onSelect(car)}>{isSelected ? 'Selected' : 'Select'}</button>
                 </div>
               </div>
             </article>
@@ -37,7 +44,12 @@ export function CarRentalSelectStep({ carRentals, selected, onSelect, onBack }: 
 
       <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
         <button className="back-button" onClick={onBack}>← Back</button>
-        <button className="back-button" onClick={() => onSelect(null)}>Skip car rental →</button>
+        {selected && (
+          <button className="cta-button" style={{ flex: 1 }} onClick={() => onSelect(selected)}>
+            Continue with {selected.provider} →
+          </button>
+        )}
+        <button className="back-button" onClick={() => onSelect(null)}>Skip →</button>
       </div>
     </section>
   );
