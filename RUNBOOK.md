@@ -6,7 +6,7 @@
 
 ## Overview
 
-React + TypeScript single-page application (SPA) that provides the user-facing travel planning wizard. Built with Vite, React 18, React Router v6, and Leaflet for maps. Communicates with OpenAI GPT-4o either directly from the browser (default) or via the GoNow Backend Service API.
+React + TypeScript single-page application (SPA) that provides the user-facing travel planning wizard. Built with Vite, React 18, React Router v6, and Leaflet for maps. In live mode it prefers the GoNow Backend Service `/generate` API when `VITE_GONOW_API_BASE_URL` is configured, and falls back to direct browser-side OpenAI GPT-4o calls for local demos.
 
 ---
 
@@ -17,7 +17,7 @@ TravelPlanConsole/
 ├── src/
 │   ├── api/
 │   │   ├── config.ts            # Reads env vars; exports { apiBaseUrl, enableMocks, openAiApiKey }
-│   │   ├── trips.ts             # createTrip() / getTrip() — in-memory tripStore (Map)
+│   │   ├── trips.ts             # createTrip() / getTrip() — in-memory tripStore + exact-request cache
 │   │   ├── chatgpt.ts           # callChatGPT() — calls OpenAI directly from browser
 │   │   ├── buildTravelPrompt.ts # Builds the GPT-4o prompt from TripFormValues
 │   │   ├── bookingUrls.ts       # Generates deep-link booking URLs
@@ -59,10 +59,16 @@ All env vars are prefixed `VITE_` and read in `src/api/config.ts`.
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `VITE_OPENAI_API_KEY` | `''` | OpenAI API key for browser-side GPT-4o calls |
-| `VITE_GONOW_API_BASE_URL` | `''` | Backend service base URL (unused in current flow) |
+| `VITE_GONOW_API_BASE_URL` | `''` | Backend HttpApi base URL (used by trip generation and Account page → `GET /users/me`) |
 | `VITE_GONOW_ENABLE_MOCKS` | `'true'` | `'true'` → use mock data; `'false'` → call OpenAI |
+| `VITE_COGNITO_USER_POOL_ID` | `''` | Cognito user pool ID (CDK output `UserPoolId`) |
+| `VITE_COGNITO_CLIENT_ID` | `''` | Cognito web client ID (CDK output `UserPoolClientId`) |
 
-Set these in `.env.local` (copy from `.env.example`).
+Set these in `.env.local` (copy from `.env.example`). Pull the latest values from the deployed stack with:
+```bash
+aws cloudformation describe-stacks --stack-name GoNowBackendStack --region us-east-1 \
+  --query 'Stacks[0].Outputs[?OutputKey==`UserPoolId`||OutputKey==`UserPoolClientId`||OutputKey==`HttpApiUrl`]'
+```
 
 ---
 
@@ -75,13 +81,26 @@ TripWizardPage → createTrip() → createMockTripResult() → in-memory tripSto
 No network calls. Instant results. Used for UI development.
 
 ### Live mode (`VITE_GONOW_ENABLE_MOCKS=false`)
+Preferred backend path when `VITE_GONOW_API_BASE_URL` is set:
+```
+TripWizardPage → createTrip() → request cache / in-flight dedupe
+                              → backend POST /generate
+                              → backend DynamoDB cache or parallel OpenAI section calls
+                              → in-memory tripStore → getTrip()
+```
+
+Fallback path when `VITE_GONOW_API_BASE_URL` is empty:
 ```
 TripWizardPage → createTrip() → callChatGPT() → OpenAI GPT-4o (browser fetch)
                                                → parse JSON → in-memory tripStore → getTrip()
 ```
-The OpenAI client is instantiated with `dangerouslyAllowBrowser: true`. The API key is exposed in the browser bundle — acceptable for local/demo use, not for production.
 
-**Note:** The backend `POST /generate` endpoint exists as an alternative that keeps the API key server-side. To switch, update `trips.ts` to call the backend instead of `callChatGPT()` directly.
+The fallback OpenAI client is instantiated with `dangerouslyAllowBrowser: true`. The API key is exposed in the browser bundle — acceptable for local/demo use, not for production.
+
+### Latency Strategy
+- `trips.ts` keeps an exact-request session cache so repeated searches during one browser session return instantly.
+- Concurrent duplicate submissions share the same in-flight promise instead of starting duplicate model/API calls.
+- Backend `/generate` adds the durable DynamoDB cache and parallel OpenAI section prompts, so production traffic should set `VITE_GONOW_API_BASE_URL` and avoid browser-side OpenAI keys.
 
 ### Wizard Steps
 1. **Trip details** (`TripForm`) — user fills departure, destination, dates, budget, travelers
@@ -104,7 +123,8 @@ State is managed in `useTripWizard` (step number, selections, tripResult). Compl
 cd Console/TravelPlanConsole
 npm install
 cp .env.example .env.local
-# Edit .env.local: set VITE_OPENAI_API_KEY if running live mode
+# Edit .env.local: set VITE_GONOW_API_BASE_URL for backend live mode,
+# or VITE_OPENAI_API_KEY for direct browser fallback
 ```
 
 ### Run with mocks (no API key needed)
@@ -157,17 +177,56 @@ npm run format
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Blank results / mock data always shown | `VITE_GONOW_ENABLE_MOCKS` defaults to `true` | Set `VITE_GONOW_ENABLE_MOCKS=false` in `.env.local` or use `npm run start` |
-| "OpenAI API key not configured" / 401 error | `VITE_OPENAI_API_KEY` missing or wrong | Set correct key in `.env.local` |
+| "OpenAI API key not configured" / 401 error | Backend was deployed without `OPENAI_API_KEY`, or direct fallback key is missing/wrong | Re-deploy backend with `OPENAI_API_KEY`, or set correct `VITE_OPENAI_API_KEY` for fallback |
+| Live mode still calls OpenAI from browser | `VITE_GONOW_API_BASE_URL` is empty | Set backend `HttpApiUrl` in `.env.local` |
 | Map not rendering | Leaflet CSS not loaded | Ensure `leaflet/dist/leaflet.css` is imported in `main.tsx` or `global.css` |
 | `@/` import alias not resolving | Vite alias misconfigured | Check `vite.config.ts` — alias `@` → `./src` |
 | Port 3000 already in use | Another process on 3000 | Kill the process or change port in `vite.config.ts` |
 
 ---
 
+## Authentication
+
+The Console uses **Cognito** (User Pool from `GoNowBackendStack`) directly from the browser via [`amazon-cognito-identity-js`](https://www.npmjs.com/package/amazon-cognito-identity-js). No backend round-trip is needed for sign-up or sign-in; the only authenticated backend call is `GET /users/me` (issued from the Account page).
+
+### Routes
+| Path | Component | Auth |
+|------|-----------|------|
+| `/` | `TripWizardPage` | Public |
+| `/login` | `SignInPage` | Public |
+| `/signup` | `SignUpPage` | Public |
+| `/confirm` | `ConfirmSignUpPage` | Public |
+| `/account` | `AccountPage` | **Requires session** (`RequireAuth`) |
+
+### Flow
+1. **Sign up** (`/signup`) — Cognito `signUp({ email, password })`. Cognito emails a 6-digit code.
+2. **Confirm** (`/confirm?email=…`) — Cognito `confirmRegistration(code)`.
+3. **Sign in** (`/login`) — Cognito `authenticateUser` (USER_SRP_AUTH). Tokens cached in localStorage by the Cognito SDK.
+4. **Account** (`/account`) — fetches `GET /users/me` with `Authorization: Bearer <idToken>`. The Lambda lazily writes a `PROFILE` row to `UsersTable` on first call (key: `PK=USER#{sub}`, `SK=PROFILE`).
+5. **Sign out** — clears Cognito local session, returns to `/login`.
+
+### Source layout
+```
+src/auth/
+├── cognito.ts        # Lazy CognitoUserPool singleton
+├── authApi.ts        # signUp / confirmSignUp / signIn / signOut / getSession / getIdToken
+├── AuthContext.tsx   # React context + useAuth() hook
+└── RequireAuth.tsx   # Route guard → redirects to /login
+
+src/features/auth/pages/
+├── SignUpPage.tsx
+├── ConfirmSignUpPage.tsx
+├── SignInPage.tsx
+└── AccountPage.tsx
+```
+
+---
+
 ## Known Limitations
 
 - Trip results are stored in-memory (`Map`) — lost on page refresh
-- OpenAI API key is exposed in the browser bundle (use backend `/generate` for production)
-- No user authentication in the current UI flow (Cognito is backend-only)
+- Direct OpenAI fallback exposes the API key in the browser bundle; use backend `/generate` for production
+- Trip wizard at `/` is still public; only `/account` is auth-gated
+- No password-reset (forgot-password) flow yet
 - No error boundary around wizard steps
-- `VITE_GONOW_API_BASE_URL` is read but the backend API path is not wired up in `trips.ts`
+- Console request cache is session-local only; durable reuse lives in the backend DynamoDB cache

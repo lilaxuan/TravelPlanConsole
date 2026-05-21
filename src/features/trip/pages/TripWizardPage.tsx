@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react';
 import { createTrip, getTrip } from '@/api/trips';
 import { TripForm } from '@/features/trip/components/TripForm';
+import { TripHero } from '@/features/trip/components/TripHero';
 import { TripLoadingState } from '@/features/trip/components/TripLoadingState';
 import { FlightSelectStep } from '@/features/trip/components/FlightSelectStep';
 import { HotelSelectStep } from '@/features/trip/components/HotelSelectStep';
@@ -7,12 +9,13 @@ import { CarRentalSelectStep } from '@/features/trip/components/CarRentalSelectS
 import { ItinerarySummaryStep } from '@/features/trip/components/ItinerarySummaryStep';
 import { useTripForm } from '@/features/trip/hooks/useTripForm';
 import { useTripWizard, type WizardStep } from '@/features/trip/hooks/useTripWizard';
+import { guessUserCity } from '@/utils/geolocate';
 
 const STEP_LABELS = ['Trip details', 'Choose flight', 'Choose hotel', 'Car rental', 'Itinerary'];
 
 export function TripWizardPage(): React.ReactElement {
   const { state, setStep, setTripResult, selectFlight, selectHotel, selectCarRental, setLoading, setError } = useTripWizard();
-  const { values, error: formError, submitting, updateField, handleSubmit } = useTripForm(async (formValues) => {
+  const { values, error: formError, submitting, updateField, setField, handleSubmit } = useTripForm(async (formValues) => {
     setLoading(true);
     try {
       const { tripId } = await createTrip(formValues);
@@ -25,8 +28,40 @@ export function TripWizardPage(): React.ReactElement {
     }
   });
 
+  // Prefill the departure city from IP geolocation (with timezone fallback)
+  // on first mount. Won't overwrite if the user has already typed something.
+  const departureRef = useRef(values.departureCity);
+  departureRef.current = values.departureCity;
+  useEffect(() => {
+    let cancelled = false;
+    guessUserCity().then((city) => {
+      if (!cancelled && city && !departureRef.current) {
+        setField('departureCity', city);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [setField]);
+
+  // Step 1 gets the immersive landing experience.
+  if (state.step === 1 && !state.loading) {
+    return (
+      <TripHero onSelectDestination={(city) => setField('destinationCity', city)}>
+        <TripForm
+          values={values}
+          error={formError ?? state.error}
+          submitting={submitting}
+          onChange={updateField}
+          onSubmit={handleSubmit}
+        />
+      </TripHero>
+    );
+  }
+
+  // Steps 2–5 (and the loading state) use the focused wizard layout.
   return (
-    <div style={{ maxWidth: 860, margin: '0 auto' }}>
+    <div className="wizard-funnel">
       <div className="wizard-steps">
         {STEP_LABELS.map((label, i) => {
           const n = i + 1;
@@ -46,16 +81,6 @@ export function TripWizardPage(): React.ReactElement {
           );
         })}
       </div>
-
-      {state.step === 1 && !state.loading && (
-        <TripForm
-          values={values}
-          error={formError ?? state.error}
-          submitting={submitting}
-          onChange={updateField}
-          onSubmit={handleSubmit}
-        />
-      )}
 
       {state.loading && <TripLoadingState />}
 

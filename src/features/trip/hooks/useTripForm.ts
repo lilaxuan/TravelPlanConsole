@@ -1,18 +1,30 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import type { TripFormValues } from '@/types/trip';
 
-const defaultValues: TripFormValues = {
-  departureCity: '',
-  destinationCity: '',
-  startDate: '',
-  endDate: '',
-  budget: 1500,
-  travelers: 1,
-};
+function toLocalISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function buildDefaultValues(): TripFormValues {
+  const today = new Date();
+  const inTwoWeeks = new Date(today);
+  inTwoWeeks.setDate(today.getDate() + 14);
+  return {
+    departureCity: '',
+    destinationCity: '',
+    startDate: toLocalISODate(today),
+    endDate: toLocalISODate(inTwoWeeks),
+    budget: 1500,
+    travelers: 1,
+  };
+}
 
 export function useTripForm(onSubmit: (values: TripFormValues) => Promise<void>) {
-  const [values, setValues] = useState<TripFormValues>(defaultValues);
+  const [values, setValues] = useState<TripFormValues>(buildDefaultValues);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,6 +47,10 @@ export function useTripForm(onSubmit: (values: TripFormValues) => Promise<void>)
       [name]: name === 'budget' || name === 'travelers' ? Number(value) : value,
     }));
   }
+
+  const setField = useCallback(<K extends keyof TripFormValues>(name: K, value: TripFormValues[K]): void => {
+    setValues((current) => ({ ...current, [name]: value }));
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -61,6 +77,7 @@ export function useTripForm(onSubmit: (values: TripFormValues) => Promise<void>)
     submitting,
     isValid,
     updateField,
+    setField,
     handleSubmit,
   };
 }
