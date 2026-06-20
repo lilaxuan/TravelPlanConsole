@@ -6,7 +6,8 @@ React + TypeScript console package for the GoNow travel planning product.
 
 ```bash
 npm install
-npm run dev
+npm run dev // using mocked data
+npm run start // using real AI smart data
 npm run build
 npm run test
 ```
