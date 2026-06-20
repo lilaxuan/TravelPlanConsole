@@ -6,7 +6,7 @@ export function buildTravelPrompt(input: TripFormValues): string {
       (new Date(input.endDate).getTime() - new Date(input.startDate).getTime()) / 86_400_000,
     ) || 1;
 
-  return `You are a professional travel planner. Generate the experience-planning parts of a trip as a single JSON object (no markdown, no extra text).
+  return `You are a professional travel planner. Generate the itinerary first, including hotel-base recommendations, as a single JSON object (no markdown, no extra text).
 
 Trip details:
 - Departure: ${input.departureCity}
@@ -17,13 +17,17 @@ Trip details:
 
 Return ONLY valid JSON matching this exact TypeScript shape:
 {
+  "hotels": [{ "name": string, "area": string, "estimatedNightlyPrice": number, "totalEstimatedPrice": number, "starRating": number, "highlights": string }],
   "itinerary": [{ "dayNumber": number, "theme": string, "activities": [{ "time": string, "name": string, "type": string, "notes": string | undefined, "transportFromPrevious": string | undefined, "lat": number, "lng": number }] }],
   "restaurants": [{ "name": string, "cuisine": string, "priceRange": string, "reservationRecommended": boolean, "reservationUrl": string | undefined, "photoQuery": string }],
   "travelTips": { "bestSeasonSummary": string, "visaGuidance": string, "localTip": string, "weatherSummary": string, "clothingRecommendations": string, "preTravelReminders": string[] }
 }
 
 Requirements:
-- Do not generate flight, hotel, car rental, price, or booking inventory. The app provides those static planning options separately.
+- Do not generate flight, car rental, or booking inventory. The app provides those booking/search links separately.
+- Recommend 2-3 hotels or hotel areas before building the itinerary. These should be real, searchable hotels or highly specific hotel-base recommendations in ${input.destinationCity}, chosen because they support the itinerary route.
+- Hotel recommendations should include neighborhood/area, estimated nightly and total trip cost, star rating, and highlights explaining why the base works for the day plans. Do not claim live availability.
+- Build the itinerary around the strongest recommended hotel/base area so the first stop of each day has a clear origin.
 - Build a detailed day-by-day itinerary for every calendar day between ${input.startDate} and ${input.endDate}. Use dayNumber 1 through ${nights}.
 - Each day must include 4-6 chronological activities with realistic times from morning through evening.
 - Each activity must be a real, mappable place in or near ${input.destinationCity}. Use specific place names, not generic labels like "museum", "downtown walk", or "local lunch".

@@ -12,15 +12,15 @@ interface Props {
 export function FlightSelectStep({ flights, request, selected, onSelect, onBack }: Props) {
   return (
     <section className="card">
-      <h2>Step 2 — Choose your flight</h2>
+      <h2>Step 3 — Flight booking links</h2>
       <p className="muted">{request.departureCity} → {request.destinationCity} · {request.startDate} – {request.endDate} · {request.travelers} traveler{request.travelers > 1 ? 's' : ''}</p>
 
       <div className="stack" style={{ marginTop: 16 }}>
         {flights.length === 0 && (
           <article className="selectable-card">
             <div style={{ flex: 1 }}>
-              <strong>No live flight offers returned</strong>
-              <p className="muted">Try nearby dates, nearby airports, or a different route. No placeholder flight data is shown.</p>
+              <strong>No flight search links available</strong>
+              <p className="muted">Try nearby dates, nearby airports, or a different route.</p>
             </div>
           </article>
         )}
@@ -72,7 +72,7 @@ export function FlightSelectStep({ flights, request, selected, onSelect, onBack 
         <button className="back-button" onClick={onBack}>← Back</button>
         {selected && (
           <button className="cta-button" style={{ flex: 1 }} onClick={() => onSelect(selected)}>
-            Continue with {selected.airline} {selected.flightNumber} →
+            Continue to hotels →
           </button>
         )}
         <button className="back-button" onClick={() => onSelect(null)}>Skip flight →</button>

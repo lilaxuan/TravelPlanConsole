@@ -11,9 +11,10 @@ interface Props {
   selectedHotel: HotelOption | null;
   selectedCarRental: CarRentalOption | null;
   onBack: () => void;
+  onContinueToFlights?: () => void;
 }
 
-export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, selectedCarRental, onBack }: Props) {
+export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, selectedCarRental, onBack, onContinueToFlights }: Props) {
   const [bookFlight, setBookFlight] = useState(selectedFlight !== null);
   const [bookHotel, setBookHotel] = useState(selectedHotel !== null);
   const [bookCar, setBookCar] = useState(selectedCarRental !== null);
@@ -47,9 +48,46 @@ export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, sele
     <div className="results-layout">
       <TripSummaryCard request={request} costSummary={trip.costSummary} />
 
+      <RecommendationList title="Recommended hotel bases">
+        <div className="stack">
+          {trip.hotels.map((hotel) => {
+            const urls = hotelSearchUrls({
+              name: hotel.name,
+              destination: request.destinationCity,
+              checkIn: request.startDate,
+              checkOut: request.endDate,
+              guests: request.travelers,
+            });
+
+            return (
+              <article className="selectable-card" key={hotel.name}>
+                <div style={{ flex: 1 }}>
+                  <strong>{hotel.name}</strong>
+                  <p className="muted">{hotel.starRating > 0 ? `${'★'.repeat(hotel.starRating)} · ` : ''}{hotel.area}</p>
+                  <p className="muted">{hotel.highlights}</p>
+                  <div className="booking-links">
+                    <span className="muted">Book/search: </span>
+                    {hotel.bookingUrl && <a href={hotel.bookingUrl} rel="noreferrer" target="_blank">Open search</a>}
+                    <a href={urls.booking} rel="noreferrer" target="_blank">Booking.com</a>
+                    <a href={urls.hotels} rel="noreferrer" target="_blank">Hotels.com</a>
+                    <a href={urls.expedia} rel="noreferrer" target="_blank">Expedia</a>
+                    <a href={urls.airbnb} rel="noreferrer" target="_blank">Airbnb</a>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <strong className="card-price">${hotel.estimatedNightlyPrice}/night</strong>
+                  <p className="muted" style={{ fontSize: '0.85rem' }}>~${hotel.totalEstimatedPrice} total</p>
+                  {hotel.priceLabel && <p className="muted" style={{ fontSize: '0.85rem' }}>{hotel.priceLabel}</p>}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </RecommendationList>
+
       {/* Selected choices banner */}
       <section className="card" style={{ display: 'grid', gap: 12 }}>
-        <h2>Your selections</h2>
+        <h2>Booking choices</h2>
         <div className="summary-grid">
           <div>
             <span className="summary-label">Flight</span>
@@ -87,9 +125,18 @@ export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, sele
             </div>
           )}
         </div>
-        <button className="primary-button" style={{ justifySelf: 'start' }} onClick={() => setShowModal(true)}>
-          🚀 Proceed to Book
-        </button>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {onContinueToFlights && (
+            <button className="primary-button" onClick={onContinueToFlights}>
+              Continue to booking links →
+            </button>
+          )}
+          {(selectedFlight || selectedHotel || selectedCarRental) && (
+            <button className="back-button" onClick={() => setShowModal(true)}>
+              Open selected booking pages
+            </button>
+          )}
+        </div>
       </section>
 
       <RecommendationList title="Daily itinerary">
@@ -141,7 +188,14 @@ export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, sele
         </div>
       </RecommendationList>
 
-      <button className="back-button" onClick={onBack}>← Back</button>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <button className="back-button" onClick={onBack}>← Back</button>
+        {onContinueToFlights && (
+          <button className="cta-button" style={{ width: 'auto' }} onClick={onContinueToFlights}>
+            Continue to flights →
+          </button>
+        )}
+      </div>
 
       {/* Book modal */}
       {showModal && (

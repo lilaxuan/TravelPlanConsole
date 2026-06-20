@@ -10,7 +10,7 @@ interface Props {
 export function CarRentalSelectStep({ carRentals, selected, onSelect, onBack }: Props) {
   return (
     <section className="card">
-      <h2>Step 4 — Car rental <span className="muted" style={{ fontSize: '0.9rem', fontWeight: 400 }}>(optional)</span></h2>
+      <h2>Step 5 — Car rental <span className="muted" style={{ fontSize: '0.9rem', fontWeight: 400 }}>(optional)</span></h2>
       <p className="muted">Add a rental car to your trip, or skip this step.</p>
 
       <div className="stack" style={{ marginTop: 16 }}>

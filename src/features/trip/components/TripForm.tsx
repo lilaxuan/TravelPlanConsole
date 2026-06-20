@@ -13,7 +13,7 @@ export function TripForm({ values, submitting, error, onChange, onSubmit }: Trip
     <form className="card trip-form" onSubmit={onSubmit}>
       <div className="form-heading">
         <h1>Where are you going?</h1>
-        <p className="muted">Tell us your trip details and we'll build a full itinerary with flights, hotels, and more.</p>
+        <p className="muted">Tell us your trip details and we'll build the itinerary first, then add hotel recommendations and booking links.</p>
       </div>
 
       {/* Route row */}

@@ -71,7 +71,7 @@ export function buildStaticTripSections(input: TripFormValues): {
 
   const hotels: HotelOption[] = [
     {
-      name: `${input.destinationCity} Central Hotel Search`,
+      name: `${input.destinationCity} Central Base Search`,
       area: 'Central / transit-friendly area',
       estimatedNightlyPrice: nightlyBase,
       totalEstimatedPrice: nightlyBase * nights,
@@ -82,7 +82,7 @@ export function buildStaticTripSections(input: TripFormValues): {
       priceLabel: 'Estimate only',
     },
     {
-      name: `${input.destinationCity} Neighborhood Stay Search`,
+      name: `${input.destinationCity} Neighborhood Base Search`,
       area: 'Local neighborhood option',
       estimatedNightlyPrice: Math.max(95, nightlyBase - 35),
       totalEstimatedPrice: Math.max(95, nightlyBase - 35) * nights,

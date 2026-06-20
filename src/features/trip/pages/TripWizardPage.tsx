@@ -11,7 +11,7 @@ import { useTripForm } from '@/features/trip/hooks/useTripForm';
 import { useTripWizard, type WizardStep } from '@/features/trip/hooks/useTripWizard';
 import { guessUserCity } from '@/utils/geolocate';
 
-const STEP_LABELS = ['Trip details', 'Choose flight', 'Choose hotel', 'Car rental', 'Itinerary'];
+const STEP_LABELS = ['Trip details', 'Itinerary', 'Flights', 'Hotels', 'Car rental'];
 
 export function TripWizardPage(): React.ReactElement {
   const { state, setStep, setTripResult, selectFlight, selectHotel, selectCarRental, setLoading, setError } = useTripWizard();
@@ -85,40 +85,41 @@ export function TripWizardPage(): React.ReactElement {
       {state.loading && <TripLoadingState />}
 
       {state.step === 2 && state.tripResult && (
-        <FlightSelectStep
-          flights={state.tripResult.flights}
-          request={state.tripResult.request}
-          selected={state.selectedFlight}
-          onSelect={selectFlight}
-          onBack={() => setStep(1)}
-        />
-      )}
-
-      {state.step === 3 && state.tripResult && (
-        <HotelSelectStep
-          hotels={state.tripResult.hotels}
-          request={state.tripResult.request}
-          selected={state.selectedHotel}
-          onSelect={selectHotel}
-          onBack={() => setStep(2)}
-        />
-      )}
-
-      {state.step === 4 && state.tripResult && (
-        <CarRentalSelectStep
-          carRentals={state.tripResult.carRentals}
-          selected={state.selectedCarRental}
-          onSelect={selectCarRental}
-          onBack={() => setStep(3)}
-        />
-      )}
-
-      {state.step === 5 && state.tripResult && (
         <ItinerarySummaryStep
           trip={state.tripResult}
           selectedFlight={state.selectedFlight}
           selectedHotel={state.selectedHotel}
           selectedCarRental={state.selectedCarRental}
+          onBack={() => setStep(1)}
+          onContinueToFlights={() => setStep(3)}
+        />
+      )}
+
+      {state.step === 3 && state.tripResult && (
+        <FlightSelectStep
+          flights={state.tripResult.flights}
+          request={state.tripResult.request}
+          selected={state.selectedFlight}
+          onSelect={selectFlight}
+          onBack={() => setStep(2)}
+        />
+      )}
+
+      {state.step === 4 && state.tripResult && (
+        <HotelSelectStep
+          hotels={state.tripResult.hotels}
+          request={state.tripResult.request}
+          selected={state.selectedHotel}
+          onSelect={selectHotel}
+          onBack={() => setStep(3)}
+        />
+      )}
+
+      {state.step === 5 && state.tripResult && (
+        <CarRentalSelectStep
+          carRentals={state.tripResult.carRentals}
+          selected={state.selectedCarRental}
+          onSelect={selectCarRental}
           onBack={() => setStep(4)}
         />
       )}

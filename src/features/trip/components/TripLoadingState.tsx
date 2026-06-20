@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 
 const MESSAGES = [
-  '✈️  Searching for the best flights…',
-  '🏨  Finding top-rated hotels…',
   '🗺️  Building your day-by-day itinerary…',
+  '🏨  Recommending hotel bases…',
   '🍜  Discovering local restaurants…',
+  '✈️  Preparing booking search links…',
   '🌤️  Checking weather and travel tips…',
   '✨  Almost ready…',
 ];

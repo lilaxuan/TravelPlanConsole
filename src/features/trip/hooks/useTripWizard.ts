@@ -37,11 +37,11 @@ export function useTripWizard() {
   }
 
   function selectFlight(flight: FlightOption | null) {
-    setState((s) => ({ ...s, selectedFlight: flight, step: 3, maxVisitedStep: Math.max(s.maxVisitedStep, 3) as WizardStep }));
+    setState((s) => ({ ...s, selectedFlight: flight, step: 4, maxVisitedStep: Math.max(s.maxVisitedStep, 4) as WizardStep }));
   }
 
   function selectHotel(hotel: HotelOption | null) {
-    setState((s) => ({ ...s, selectedHotel: hotel, step: 4, maxVisitedStep: Math.max(s.maxVisitedStep, 4) as WizardStep }));
+    setState((s) => ({ ...s, selectedHotel: hotel, step: 5, maxVisitedStep: Math.max(s.maxVisitedStep, 5) as WizardStep }));
   }
 
   function selectCarRental(car: CarRentalOption | null) {

@@ -12,15 +12,15 @@ interface Props {
 export function HotelSelectStep({ hotels, request, selected, onSelect, onBack }: Props) {
   return (
     <section className="card">
-      <h2>Step 3 — Choose your hotel</h2>
+      <h2>Step 4 — Hotel booking links</h2>
       <p className="muted">{request.destinationCity} · {request.startDate} – {request.endDate} · {request.travelers} guest{request.travelers > 1 ? 's' : ''}</p>
 
       <div className="stack" style={{ marginTop: 16 }}>
         {hotels.length === 0 && (
           <article className="selectable-card">
             <div style={{ flex: 1 }}>
-              <strong>No live hotel offers returned</strong>
-              <p className="muted">Try nearby dates, another destination spelling, or a wider budget. No placeholder hotel data is shown.</p>
+              <strong>No hotel recommendations generated</strong>
+              <p className="muted">Try another destination spelling, nearby dates, or a wider budget.</p>
             </div>
           </article>
         )}
@@ -72,7 +72,7 @@ export function HotelSelectStep({ hotels, request, selected, onSelect, onBack }:
         <button className="back-button" onClick={onBack}>← Back</button>
         {selected && (
           <button className="cta-button" style={{ flex: 1 }} onClick={() => onSelect(selected)}>
-            Continue with {selected.name} →
+            Continue to car rentals →
           </button>
         )}
         <button className="back-button" onClick={() => onSelect(null)}>Skip hotel →</button>
