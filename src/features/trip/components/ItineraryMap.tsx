@@ -1,109 +1,161 @@
-import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import type { ItineraryDay } from '@/types/trip';
-
-// Fix default marker icons broken by bundlers
-delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
-
-function makeNumberedIcon(n: number) {
-  return L.divIcon({
-    className: '',
-    html: `<div style="background:#2563eb;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.35)">${n}</div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-  });
-}
-
-function FitBounds({ positions }: { positions: [number, number][] }) {
-  const map = useMap();
-  useEffect(() => {
-    if (positions.length > 0) map.fitBounds(positions, { padding: [40, 40] });
-  }, [map, positions]);
-  return null;
-}
+import { useMemo, useState } from 'react';
+import { GoogleMap, InfoWindow, LoadScript, Marker, Polyline } from '@react-google-maps/api';
+import { config } from '@/api/config';
+import type { Activity, ItineraryDay } from '@/types/trip';
 
 interface Props {
   itinerary: ItineraryDay[];
 }
 
-export function ItineraryMap({ itinerary }: Props) {
-  const [selectedDay, setSelectedDay] = useState(itinerary[0]?.dayNumber ?? 1);
-  const day = itinerary.find((d) => d.dayNumber === selectedDay);
-  const activities = (day?.activities ?? []).filter((a) => a.lat != null && a.lng != null);
-  const positions = activities.map((a) => [a.lat!, a.lng!] as [number, number]);
+type ItineraryView = 'map' | 'list' | 'calendar';
+
+function ActivityDetails({ activity }: { activity: Activity }) {
+  return (
+    <>
+      {activity.transportFromPrevious && (
+        <p className="muted" style={{ margin: '0 0 2px' }}>{activity.transportFromPrevious}</p>
+      )}
+      <strong>{activity.time}</strong> — {activity.name}
+      {activity.notes && <span className="muted"> ({activity.notes})</span>}
+    </>
+  );
+}
+
+function GoogleItineraryMap({ activities }: { activities: Activity[] }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const positions = useMemo(
+    () => activities.map((activity) => ({ lat: activity.lat!, lng: activity.lng! })),
+    [activities],
+  );
+
+  const center = positions[0] ?? { lat: 20, lng: 0 };
 
   return (
-    <div>
-      {/* Day selector */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+    <LoadScript googleMapsApiKey={config.googleMapsApiKey}>
+      <GoogleMap
+        mapContainerStyle={{ height: '100%', width: '100%' }}
+        center={center}
+        zoom={positions.length ? 13 : 2}
+        onLoad={(map) => {
+          if (positions.length > 1) {
+            const bounds = new google.maps.LatLngBounds();
+            positions.forEach((position) => bounds.extend(position));
+            map.fitBounds(bounds, 48);
+          }
+        }}
+        options={{
+          clickableIcons: false,
+          fullscreenControl: true,
+          mapTypeControl: false,
+          streetViewControl: false,
+        }}
+      >
+        {positions.length > 1 && (
+          <Polyline
+            path={positions}
+            options={{
+              strokeColor: '#ff6b5b',
+              strokeOpacity: 0.9,
+              strokeWeight: 4,
+            }}
+          />
+        )}
+        {activities.map((activity, i) => {
+          const position = { lat: activity.lat!, lng: activity.lng! };
+          return (
+            <Marker
+              key={`${activity.name}-${i}`}
+              position={position}
+              label={{ text: String(i + 1), color: 'white', fontWeight: '700' }}
+              onClick={() => setActiveIndex(i)}
+            >
+              {activeIndex === i && (
+                <InfoWindow onCloseClick={() => setActiveIndex(null)}>
+                  <div className="map-info-window">
+                    <strong>{activity.time} — {activity.name}</strong>
+                    {activity.transportFromPrevious && <p>{activity.transportFromPrevious}</p>}
+                    {activity.notes && <p>{activity.notes}</p>}
+                  </div>
+                </InfoWindow>
+              )}
+            </Marker>
+          );
+        })}
+      </GoogleMap>
+    </LoadScript>
+  );
+}
+
+export function ItineraryMap({ itinerary }: Props) {
+  const [selectedDay, setSelectedDay] = useState(itinerary[0]?.dayNumber ?? 1);
+  const [view, setView] = useState<ItineraryView>('map');
+  const day = itinerary.find((d) => d.dayNumber === selectedDay);
+  const allActivities = day?.activities ?? [];
+  const mappedActivities = allActivities.filter((a) => a.lat != null && a.lng != null);
+
+  return (
+    <div className="itinerary-workspace">
+      <div className="itinerary-day-tabs">
         {itinerary.map((d) => (
           <button
             key={d.dayNumber}
             onClick={() => setSelectedDay(d.dayNumber)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 20,
-              border: 'none',
-              background: d.dayNumber === selectedDay ? '#2563eb' : '#e5e7eb',
-              color: d.dayNumber === selectedDay ? 'white' : '#111827',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
+            className={d.dayNumber === selectedDay ? 'active' : ''}
           >
             Day {d.dayNumber}
           </button>
         ))}
       </div>
 
-      {day && <p style={{ marginBottom: 8 }}><strong>{day.theme}</strong></p>}
-
-      {/* Map */}
-      <div style={{ height: 420, borderRadius: 12, overflow: 'hidden' }}>
-        <MapContainer
-          center={positions[0] ?? [20, 0]}
-          zoom={13}
-          style={{ height: '100%', width: '100%' }}
-          key={selectedDay} // remount on day change to reset view
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          />
-          {positions.length > 0 && <FitBounds positions={positions} />}
-          {positions.length > 1 && (
-            <Polyline positions={positions} pathOptions={{ color: '#2563eb', weight: 3, dashArray: '6 6' }} />
-          )}
-          {activities.map((a, i) => (
-            <Marker key={`${a.name}-${i}`} position={[a.lat!, a.lng!]} icon={makeNumberedIcon(i + 1)}>
-              <Popup>
-                <strong>{a.time} — {a.name}</strong>
-                {a.transportFromPrevious && <p style={{ margin: '4px 0 0' }}>🚗 {a.transportFromPrevious}</p>}
-                {a.notes && <p style={{ margin: '4px 0 0', color: '#6b7280' }}>{a.notes}</p>}
-              </Popup>
-            </Marker>
+      <div className="itinerary-toolbar">
+        {day && <p><strong>{day.theme}</strong></p>}
+        <div className="itinerary-view-tabs" aria-label="Itinerary view">
+          {(['map', 'list', 'calendar'] as ItineraryView[]).map((option) => (
+            <button key={option} className={view === option ? 'active' : ''} onClick={() => setView(option)}>
+              {option[0].toUpperCase() + option.slice(1)}
+            </button>
           ))}
-        </MapContainer>
+        </div>
       </div>
 
-      {/* Activity list below map */}
-      <ol style={{ marginTop: 16, paddingLeft: 20, display: 'grid', gap: 8 }}>
-        {activities.map((a, i) => (
-          <li key={`${a.name}-${i}`}>
-            {a.transportFromPrevious && (
-              <p className="muted" style={{ margin: '0 0 2px' }}>🚗 {a.transportFromPrevious}</p>
-            )}
-            <strong>{a.time}</strong> — {a.name}
-            {a.notes && <span className="muted"> ({a.notes})</span>}
-          </li>
-        ))}
-      </ol>
+      {view === 'map' && (
+        <div className="itinerary-map-frame">
+          {config.googleMapsApiKey ? (
+            <GoogleItineraryMap key={selectedDay} activities={mappedActivities} />
+          ) : (
+            <div className="map-empty-state">
+              <strong>Google Maps is not configured</strong>
+              <p className="muted">Set VITE_GOOGLE_MAPS_API_KEY in .env.local to render the interactive map.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {view === 'list' && (
+        <ol className="itinerary-list">
+          {allActivities.map((activity, i) => (
+            <li key={`${activity.name}-${i}`}>
+              <ActivityDetails activity={activity} />
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {view === 'calendar' && (
+        <div className="itinerary-calendar">
+          {allActivities.map((activity, i) => (
+            <div className="calendar-row" key={`${activity.name}-${i}`}>
+              <time>{activity.time}</time>
+              <div>
+                <strong>{activity.name}</strong>
+                <p className="muted">{activity.type}</p>
+                {activity.transportFromPrevious && <p>{activity.transportFromPrevious}</p>}
+                {activity.notes && <p className="muted">{activity.notes}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

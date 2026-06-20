@@ -7,15 +7,15 @@ import type { FlightOption, HotelOption, CarRentalOption, TripResult } from '@/t
 
 interface Props {
   trip: TripResult;
-  selectedFlight: FlightOption;
-  selectedHotel: HotelOption;
+  selectedFlight: FlightOption | null;
+  selectedHotel: HotelOption | null;
   selectedCarRental: CarRentalOption | null;
   onBack: () => void;
 }
 
 export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, selectedCarRental, onBack }: Props) {
-  const [bookFlight, setBookFlight] = useState(true);
-  const [bookHotel, setBookHotel] = useState(true);
+  const [bookFlight, setBookFlight] = useState(selectedFlight !== null);
+  const [bookHotel, setBookHotel] = useState(selectedHotel !== null);
   const [bookCar, setBookCar] = useState(selectedCarRental !== null);
   const [showModal, setShowModal] = useState(false);
   const { request } = trip;
@@ -27,18 +27,18 @@ export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, sele
       date: request.startDate,
       returnDate: request.endDate,
       travelers: request.travelers,
-      airline: selectedFlight.airline,
+      airline: selectedFlight?.airline,
     });
     const hotelUrls = hotelSearchUrls({
-      name: selectedHotel.name,
+      name: selectedHotel?.name ?? '',
       destination: request.destinationCity,
       checkIn: request.startDate,
       checkOut: request.endDate,
       guests: request.travelers,
     });
 
-    if (bookFlight) window.open(selectedFlight.bookingUrl ?? flightUrls.google, '_blank');
-    if (bookHotel) window.open(selectedHotel.bookingUrl ?? hotelUrls.booking, '_blank');
+    if (bookFlight && selectedFlight) window.open(selectedFlight.bookingUrl ?? flightUrls.google, '_blank');
+    if (bookHotel && selectedHotel) window.open(selectedHotel.bookingUrl ?? hotelUrls.booking, '_blank');
     if (bookCar && selectedCarRental?.bookingUrl) window.open(selectedCarRental.bookingUrl, '_blank');
     setShowModal(false);
   }
@@ -53,13 +53,31 @@ export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, sele
         <div className="summary-grid">
           <div>
             <span className="summary-label">Flight</span>
-            <strong>{selectedFlight.airline} {selectedFlight.flightNumber}</strong>
-            <p className="muted">{selectedFlight.departure} → {selectedFlight.arrival} · ${selectedFlight.estimatedPrice}{selectedFlight.priceLabel ? ` · ${selectedFlight.priceLabel}` : ''}</p>
+            {selectedFlight ? (
+              <>
+                <strong>{selectedFlight.airline} {selectedFlight.flightNumber}</strong>
+                <p className="muted">{selectedFlight.departure} → {selectedFlight.arrival} · ${selectedFlight.estimatedPrice}{selectedFlight.priceLabel ? ` · ${selectedFlight.priceLabel}` : ''}</p>
+              </>
+            ) : (
+              <>
+                <strong>Skipped</strong>
+                <p className="muted">No flight option selected.</p>
+              </>
+            )}
           </div>
           <div>
             <span className="summary-label">Hotel</span>
-            <strong>{selectedHotel.name}</strong>
-            <p className="muted">{selectedHotel.area} · ~${selectedHotel.totalEstimatedPrice} total{selectedHotel.priceLabel ? ` · ${selectedHotel.priceLabel}` : ''}</p>
+            {selectedHotel ? (
+              <>
+                <strong>{selectedHotel.name}</strong>
+                <p className="muted">{selectedHotel.area} · ~${selectedHotel.totalEstimatedPrice} total{selectedHotel.priceLabel ? ` · ${selectedHotel.priceLabel}` : ''}</p>
+              </>
+            ) : (
+              <>
+                <strong>Skipped</strong>
+                <p className="muted">No hotel option selected.</p>
+              </>
+            )}
           </div>
           {selectedCarRental && (
             <div>
@@ -132,20 +150,24 @@ export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, sele
             <h2>Confirm booking</h2>
             <p className="muted">We'll open the booking pages for your selections. You'll complete payment on each platform.</p>
             <div className="stack" style={{ margin: '20px 0' }}>
-              <label className="checkbox-label">
-                <input type="checkbox" checked={bookFlight} onChange={(e) => setBookFlight(e.target.checked)} />
-                <span>
-                  <strong>Flight</strong> — {selectedFlight.airline} {selectedFlight.flightNumber} · ${selectedFlight.estimatedPrice}
-                  {selectedFlight.priceLabel ? ` · ${selectedFlight.priceLabel}` : ''}
-                </span>
-              </label>
-              <label className="checkbox-label">
-                <input type="checkbox" checked={bookHotel} onChange={(e) => setBookHotel(e.target.checked)} />
-                <span>
-                  <strong>Hotel</strong> — {selectedHotel.name} · ~${selectedHotel.totalEstimatedPrice}
-                  {selectedHotel.priceLabel ? ` · ${selectedHotel.priceLabel}` : ''}
-                </span>
-              </label>
+              {selectedFlight && (
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={bookFlight} onChange={(e) => setBookFlight(e.target.checked)} />
+                  <span>
+                    <strong>Flight</strong> — {selectedFlight.airline} {selectedFlight.flightNumber} · ${selectedFlight.estimatedPrice}
+                    {selectedFlight.priceLabel ? ` · ${selectedFlight.priceLabel}` : ''}
+                  </span>
+                </label>
+              )}
+              {selectedHotel && (
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={bookHotel} onChange={(e) => setBookHotel(e.target.checked)} />
+                  <span>
+                    <strong>Hotel</strong> — {selectedHotel.name} · ~${selectedHotel.totalEstimatedPrice}
+                    {selectedHotel.priceLabel ? ` · ${selectedHotel.priceLabel}` : ''}
+                  </span>
+                </label>
+              )}
               {selectedCarRental && (
                 <label className="checkbox-label">
                   <input type="checkbox" checked={bookCar} onChange={(e) => setBookCar(e.target.checked)} />

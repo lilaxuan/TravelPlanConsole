@@ -466,6 +466,97 @@ a { color: var(--blue); text-decoration: none; font-weight: 600; }
 .itinerary-day:last-child { border-bottom: 0; }
 .itinerary-day ul, .side-panel ul { padding-left: 20px; }
 
+.itinerary-workspace { display: grid; gap: 14px; }
+
+.itinerary-day-tabs,
+.itinerary-view-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.itinerary-day-tabs button,
+.itinerary-view-tabs button {
+  border: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  color: var(--gray-700);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.itinerary-day-tabs button.active,
+.itinerary-view-tabs button.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: white;
+}
+
+.itinerary-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.itinerary-map-frame {
+  height: 420px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+}
+
+.map-empty-state {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 24px;
+  background: var(--gray-50);
+}
+
+.map-info-window {
+  max-width: 240px;
+  display: grid;
+  gap: 4px;
+  color: var(--gray-900);
+}
+
+.map-info-window p { margin: 0; }
+
+.itinerary-list {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 12px;
+}
+
+.itinerary-calendar {
+  display: grid;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: white;
+}
+
+.calendar-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.calendar-row:last-child { border-bottom: 0; }
+
+.calendar-row time {
+  color: var(--blue-dark);
+  font-weight: 800;
+}
+
 /* ── Restaurant cards ──────────────────────────────── */
 .restaurant-card {
   border-bottom: 1px solid var(--gray-200);

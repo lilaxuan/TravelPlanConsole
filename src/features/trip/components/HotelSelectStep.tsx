@@ -5,7 +5,7 @@ interface Props {
   hotels: HotelOption[];
   request: TripFormValues;
   selected: HotelOption | null;
-  onSelect: (hotel: HotelOption) => void;
+  onSelect: (hotel: HotelOption | null) => void;
   onBack: () => void;
 }
 
@@ -75,6 +75,7 @@ export function HotelSelectStep({ hotels, request, selected, onSelect, onBack }:
             Continue with {selected.name} →
           </button>
         )}
+        <button className="back-button" onClick={() => onSelect(null)}>Skip hotel →</button>
       </div>
     </section>
   );

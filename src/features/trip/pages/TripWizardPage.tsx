@@ -113,7 +113,7 @@ export function TripWizardPage(): React.ReactElement {
         />
       )}
 
-      {state.step === 5 && state.tripResult && state.selectedFlight && state.selectedHotel && (
+      {state.step === 5 && state.tripResult && (
         <ItinerarySummaryStep
           trip={state.tripResult}
           selectedFlight={state.selectedFlight}

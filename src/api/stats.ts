@@ -6,7 +6,7 @@ export interface StatsResponse {
 
 export async function fetchStats(signal?: AbortSignal): Promise<StatsResponse> {
   if (!config.apiBaseUrl) {
-    throw new Error('VITE_GONOW_API_BASE_URL is not set');
+    return { totalUsers: 0 };
   }
   const res = await fetch(`${config.apiBaseUrl}/stats`, { signal });
   if (!res.ok) throw new Error(`GET /stats → ${res.status}`);

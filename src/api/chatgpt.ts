@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { config } from '@/api/config';
 import { buildTravelPrompt } from '@/api/buildTravelPrompt';
+import { buildStaticTripSections } from '@/api/staticTripSections';
 import type { TripFormValues, TripResult } from '@/types/trip';
 
 let _client: OpenAI | null = null;
@@ -20,29 +21,28 @@ export async function callChatGPT(input: TripFormValues, tripId: string): Promis
     response_format: { type: 'json_object' },
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7,
+    max_tokens: 5000,
   });
 
   const raw = completion.choices[0]?.message?.content ?? '{}';
-  const parsed = JSON.parse(raw) as Omit<TripResult, 'tripId' | 'status' | 'request' | 'createdAt'> & {
-    departureIata?: string;
-    destinationIata?: string;
-  };
+  const parsed = JSON.parse(raw) as Pick<TripResult, 'itinerary' | 'restaurants' | 'travelTips'>;
+  const staticSections = buildStaticTripSections(input);
 
   return {
     tripId,
     status: 'COMPLETED',
     request: {
       ...input,
-      departureIata: parsed.departureIata,
-      destinationIata: parsed.destinationIata,
+      departureIata: staticSections.departureIata,
+      destinationIata: staticSections.destinationIata,
     },
     createdAt: new Date().toISOString(),
-    flights: parsed.flights ?? [],
-    hotels: parsed.hotels ?? [],
-    carRentals: parsed.carRentals ?? [],
+    flights: staticSections.flights,
+    hotels: staticSections.hotels,
+    carRentals: staticSections.carRentals,
     itinerary: parsed.itinerary ?? [],
     restaurants: parsed.restaurants ?? [],
     travelTips: parsed.travelTips ?? { bestSeasonSummary: '', visaGuidance: '', localTip: '' },
-    costSummary: parsed.costSummary ?? { flights: 0, hotels: 0, carRental: 0, foodEstimate: 0, activitiesEstimate: 0, total: 0 },
+    costSummary: staticSections.costSummary,
   };
 }

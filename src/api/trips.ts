@@ -1,6 +1,6 @@
 import { callChatGPT } from '@/api/chatgpt';
-import { config } from '@/api/config';
 import { createMockTripResult } from '@/api/mockData';
+import { config } from '@/api/config';
 import type { TripFormValues, TripResult } from '@/types/trip';
 
 const tripStore = new Map<string, TripResult>();
@@ -30,26 +30,6 @@ function cloneTripResult(result: TripResult, tripId: string): TripResult {
   };
 }
 
-async function generateViaBackend(input: TripFormValues): Promise<TripResult> {
-  if (!config.apiBaseUrl) {
-    throw new Error('Backend API base URL is not configured');
-  }
-
-  const baseUrl = config.apiBaseUrl.replace(/\/$/, '');
-  const response = await fetch(`${baseUrl}/generate`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? `Trip generation failed (${response.status})`);
-  }
-
-  return response.json() as Promise<TripResult>;
-}
-
 export async function createTrip(input: TripFormValues): Promise<{ tripId: string }> {
   const tripId = createTripId();
   const requestKey = buildRequestKey(input);
@@ -64,9 +44,7 @@ export async function createTrip(input: TripFormValues): Promise<{ tripId: strin
   if (!request) {
     request = config.enableMocks
       ? Promise.resolve(createMockTripResult(input, tripId))
-      : config.apiBaseUrl
-        ? generateViaBackend(input)
-        : callChatGPT(input, tripId);
+      : callChatGPT(input, tripId);
     inflightRequests.set(requestKey, request);
   }
 

@@ -6,7 +6,7 @@
 
 ## Overview
 
-React + TypeScript single-page application (SPA) that provides the user-facing travel planning wizard. Built with Vite, React 18, React Router v6, and Leaflet for maps. In live mode it prefers the GoNow Backend Service `/generate` API when `VITE_GONOW_API_BASE_URL` is configured, and falls back to direct browser-side OpenAI GPT-4o calls for local demos.
+React + TypeScript single-page application (SPA) that provides the user-facing travel planning wizard. Built with Vite, React 18, React Router v6, and Google Maps for itinerary maps. The core trip planner is Console-only: in live mode it calls OpenAI from the browser for itinerary/restaurants/tips and combines that with local static flight, hotel, and car-rental planning options.
 
 ---
 
@@ -16,7 +16,7 @@ React + TypeScript single-page application (SPA) that provides the user-facing t
 TravelPlanConsole/
 ├── src/
 │   ├── api/
-│   │   ├── config.ts            # Reads env vars; exports { apiBaseUrl, enableMocks, openAiApiKey }
+│   │   ├── config.ts            # Reads env vars; exports { enableMocks, openAiApiKey, googleMapsApiKey, ... }
 │   │   ├── trips.ts             # createTrip() / getTrip() — in-memory tripStore + exact-request cache
 │   │   ├── chatgpt.ts           # callChatGPT() — calls OpenAI directly from browser
 │   │   ├── buildTravelPrompt.ts # Builds the GPT-4o prompt from TripFormValues
@@ -59,7 +59,8 @@ All env vars are prefixed `VITE_` and read in `src/api/config.ts`.
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `VITE_OPENAI_API_KEY` | `''` | OpenAI API key for browser-side GPT-4o calls |
-| `VITE_GONOW_API_BASE_URL` | `''` | Backend HttpApi base URL (used by trip generation and Account page → `GET /users/me`) |
+| `VITE_GOOGLE_MAPS_API_KEY` | `''` | Google Maps JavaScript API key for itinerary map rendering |
+| `VITE_GONOW_API_BASE_URL` | `''` | Optional backend HttpApi base URL for Account page → `GET /users/me` and public stats |
 | `VITE_GONOW_ENABLE_MOCKS` | `'true'` | `'true'` → use mock data; `'false'` → call OpenAI |
 | `VITE_COGNITO_USER_POOL_ID` | `''` | Cognito user pool ID (CDK output `UserPoolId`) |
 | `VITE_COGNITO_CLIENT_ID` | `''` | Cognito web client ID (CDK output `UserPoolClientId`) |
@@ -81,26 +82,21 @@ TripWizardPage → createTrip() → createMockTripResult() → in-memory tripSto
 No network calls. Instant results. Used for UI development.
 
 ### Live mode (`VITE_GONOW_ENABLE_MOCKS=false`)
-Preferred backend path when `VITE_GONOW_API_BASE_URL` is set:
+Live mode (`VITE_GONOW_ENABLE_MOCKS=false`):
 ```
 TripWizardPage → createTrip() → request cache / in-flight dedupe
-                              → backend POST /generate
-                              → backend DynamoDB cache or parallel OpenAI section calls
+                              → callChatGPT()
+                              → OpenAI GPT-4o generates itinerary/restaurants/tips
+                              → local static flight/hotel/car sections
                               → in-memory tripStore → getTrip()
 ```
 
-Fallback path when `VITE_GONOW_API_BASE_URL` is empty:
-```
-TripWizardPage → createTrip() → callChatGPT() → OpenAI GPT-4o (browser fetch)
-                                               → parse JSON → in-memory tripStore → getTrip()
-```
-
-The fallback OpenAI client is instantiated with `dangerouslyAllowBrowser: true`. The API key is exposed in the browser bundle — acceptable for local/demo use, not for production.
+The OpenAI client is instantiated with `dangerouslyAllowBrowser: true`. The API key is exposed in the browser bundle — acceptable for local/demo use, not for production.
 
 ### Latency Strategy
 - `trips.ts` keeps an exact-request session cache so repeated searches during one browser session return instantly.
 - Concurrent duplicate submissions share the same in-flight promise instead of starting duplicate model/API calls.
-- Backend `/generate` adds the durable DynamoDB cache and parallel OpenAI section prompts, so production traffic should set `VITE_GONOW_API_BASE_URL` and avoid browser-side OpenAI keys.
+- Console request caching is session-local. A production hardening pass should move OpenAI calls behind an API boundary before public launch.
 
 ### UX Architecture Goal
 
@@ -125,9 +121,9 @@ TripHero form
 ```
 
 Near-term implementation:
-- `POST /generate` returns Amadeus-backed flight and hotel offers for the existing wizard.
-- If provider credentials are missing, the backend returns a clear setup error instead of fake logistics.
-- Car rental inventory may be empty until a real car provider is configured.
+- The Console returns static flight, hotel, and car-rental planning options locally.
+- OpenAI only generates itinerary, restaurant, and travel-tip content.
+- Car rental options are planning/search links, not live inventory.
 
 Long-term implementation:
 - `POST /trips` starts a progressive job.
@@ -155,8 +151,9 @@ State is managed in `useTripWizard` (step number, selections, tripResult). Compl
 cd Console/TravelPlanConsole
 npm install
 cp .env.example .env.local
-# Edit .env.local: set VITE_GONOW_API_BASE_URL for backend live mode,
-# or VITE_OPENAI_API_KEY for direct browser fallback
+# Edit .env.local: set VITE_OPENAI_API_KEY for live itinerary generation,
+# and VITE_GOOGLE_MAPS_API_KEY for the Google Maps itinerary view.
+# VITE_GONOW_API_BASE_URL is optional for account/profile and stats features.
 ```
 
 ### Run with mocks (no API key needed)
@@ -209,9 +206,9 @@ npm run format
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Blank results / mock data always shown | `VITE_GONOW_ENABLE_MOCKS` defaults to `true` | Set `VITE_GONOW_ENABLE_MOCKS=false` in `.env.local` or use `npm run start` |
-| "OpenAI API key not configured" / 401 error | Backend was deployed without `OPENAI_API_KEY`, or direct fallback key is missing/wrong | Re-deploy backend with `OPENAI_API_KEY`, or set correct `VITE_OPENAI_API_KEY` for fallback |
-| Live mode still calls OpenAI from browser | `VITE_GONOW_API_BASE_URL` is empty | Set backend `HttpApiUrl` in `.env.local` |
-| Map not rendering | Leaflet CSS not loaded | Ensure `leaflet/dist/leaflet.css` is imported in `main.tsx` or `global.css` |
+| "OpenAI API key not configured" / 401 error | Browser-side key is missing/wrong | Set correct `VITE_OPENAI_API_KEY` |
+| Live mode still shows mock data | `VITE_GONOW_ENABLE_MOCKS` is still true | Set `VITE_GONOW_ENABLE_MOCKS=false` or use `npm run start` |
+| Map not rendering | Google Maps key is missing or not allowed for this origin | Set `VITE_GOOGLE_MAPS_API_KEY` and allow `http://127.0.0.1:3000/*` / your deployed origin |
 | `@/` import alias not resolving | Vite alias misconfigured | Check `vite.config.ts` — alias `@` → `./src` |
 | Port 3000 already in use | Another process on 3000 | Kill the process or change port in `vite.config.ts` |
 
@@ -257,7 +254,7 @@ src/features/auth/pages/
 ## Known Limitations
 
 - Trip results are stored in-memory (`Map`) — lost on page refresh
-- Direct OpenAI fallback exposes the API key in the browser bundle; use backend `/generate` for production
+- Direct OpenAI exposes the API key in the browser bundle; move it behind an API boundary before production
 - Trip wizard at `/` is still public; only `/account` is auth-gated
 - No password-reset (forgot-password) flow yet
 - No error boundary around wizard steps

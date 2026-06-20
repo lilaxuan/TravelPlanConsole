@@ -5,7 +5,7 @@ interface Props {
   flights: FlightOption[];
   request: TripFormValues;
   selected: FlightOption | null;
-  onSelect: (flight: FlightOption) => void;
+  onSelect: (flight: FlightOption | null) => void;
   onBack: () => void;
 }
 
@@ -75,6 +75,7 @@ export function FlightSelectStep({ flights, request, selected, onSelect, onBack 
             Continue with {selected.airline} {selected.flightNumber} →
           </button>
         )}
+        <button className="back-button" onClick={() => onSelect(null)}>Skip flight →</button>
       </div>
     </section>
   );

@@ -36,11 +36,11 @@ export function useTripWizard() {
     setState((s) => ({ ...s, formValues, tripResult, step: 2, maxVisitedStep: Math.max(s.maxVisitedStep, 2) as WizardStep, error: null }));
   }
 
-  function selectFlight(flight: FlightOption) {
+  function selectFlight(flight: FlightOption | null) {
     setState((s) => ({ ...s, selectedFlight: flight, step: 3, maxVisitedStep: Math.max(s.maxVisitedStep, 3) as WizardStep }));
   }
 
-  function selectHotel(hotel: HotelOption) {
+  function selectHotel(hotel: HotelOption | null) {
     setState((s) => ({ ...s, selectedHotel: hotel, step: 4, maxVisitedStep: Math.max(s.maxVisitedStep, 4) as WizardStep }));
   }
 
