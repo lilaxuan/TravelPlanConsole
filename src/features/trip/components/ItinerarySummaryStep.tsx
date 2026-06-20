@@ -37,8 +37,8 @@ export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, sele
       guests: request.travelers,
     });
 
-    if (bookFlight) window.open(flightUrls.google, '_blank');
-    if (bookHotel) window.open(hotelUrls.booking, '_blank');
+    if (bookFlight) window.open(selectedFlight.bookingUrl ?? flightUrls.google, '_blank');
+    if (bookHotel) window.open(selectedHotel.bookingUrl ?? hotelUrls.booking, '_blank');
     if (bookCar && selectedCarRental?.bookingUrl) window.open(selectedCarRental.bookingUrl, '_blank');
     setShowModal(false);
   }
@@ -54,18 +54,18 @@ export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, sele
           <div>
             <span className="summary-label">Flight</span>
             <strong>{selectedFlight.airline} {selectedFlight.flightNumber}</strong>
-            <p className="muted">{selectedFlight.departure} → {selectedFlight.arrival} · ${selectedFlight.estimatedPrice}</p>
+            <p className="muted">{selectedFlight.departure} → {selectedFlight.arrival} · ${selectedFlight.estimatedPrice}{selectedFlight.priceLabel ? ` · ${selectedFlight.priceLabel}` : ''}</p>
           </div>
           <div>
             <span className="summary-label">Hotel</span>
             <strong>{selectedHotel.name}</strong>
-            <p className="muted">{selectedHotel.area} · ~${selectedHotel.totalEstimatedPrice} total</p>
+            <p className="muted">{selectedHotel.area} · ~${selectedHotel.totalEstimatedPrice} total{selectedHotel.priceLabel ? ` · ${selectedHotel.priceLabel}` : ''}</p>
           </div>
           {selectedCarRental && (
             <div>
               <span className="summary-label">Car rental</span>
               <strong>{selectedCarRental.provider}</strong>
-              <p className="muted">{selectedCarRental.pickupLocation} · ${selectedCarRental.estimatedTotalPrice}</p>
+              <p className="muted">{selectedCarRental.pickupLocation} · ${selectedCarRental.estimatedTotalPrice}{selectedCarRental.priceLabel ? ` · ${selectedCarRental.priceLabel}` : ''}</p>
             </div>
           )}
         </div>
@@ -136,12 +136,14 @@ export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, sele
                 <input type="checkbox" checked={bookFlight} onChange={(e) => setBookFlight(e.target.checked)} />
                 <span>
                   <strong>Flight</strong> — {selectedFlight.airline} {selectedFlight.flightNumber} · ${selectedFlight.estimatedPrice}
+                  {selectedFlight.priceLabel ? ` · ${selectedFlight.priceLabel}` : ''}
                 </span>
               </label>
               <label className="checkbox-label">
                 <input type="checkbox" checked={bookHotel} onChange={(e) => setBookHotel(e.target.checked)} />
                 <span>
                   <strong>Hotel</strong> — {selectedHotel.name} · ~${selectedHotel.totalEstimatedPrice}
+                  {selectedHotel.priceLabel ? ` · ${selectedHotel.priceLabel}` : ''}
                 </span>
               </label>
               {selectedCarRental && (
@@ -149,6 +151,7 @@ export function ItinerarySummaryStep({ trip, selectedFlight, selectedHotel, sele
                   <input type="checkbox" checked={bookCar} onChange={(e) => setBookCar(e.target.checked)} />
                   <span>
                     <strong>Car rental</strong> — {selectedCarRental.provider} · ${selectedCarRental.estimatedTotalPrice}
+                    {selectedCarRental.priceLabel ? ` · ${selectedCarRental.priceLabel}` : ''}
                   </span>
                 </label>
               )}

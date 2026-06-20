@@ -16,6 +16,14 @@ export function HotelSelectStep({ hotels, request, selected, onSelect, onBack }:
       <p className="muted">{request.destinationCity} · {request.startDate} – {request.endDate} · {request.travelers} guest{request.travelers > 1 ? 's' : ''}</p>
 
       <div className="stack" style={{ marginTop: 16 }}>
+        {hotels.length === 0 && (
+          <article className="selectable-card">
+            <div style={{ flex: 1 }}>
+              <strong>No live hotel offers returned</strong>
+              <p className="muted">Try nearby dates, another destination spelling, or a wider budget. No placeholder hotel data is shown.</p>
+            </div>
+          </article>
+        )}
         {hotels.map((hotel) => {
           const isSelected = selected?.name === hotel.name;
           const urls = hotelSearchUrls({
@@ -37,11 +45,13 @@ export function HotelSelectStep({ hotels, request, selected, onSelect, onBack }:
               <div className="selectable-card-radio">{isSelected ? '●' : '○'}</div>
               <div style={{ flex: 1 }}>
                 <strong>{hotel.name}</strong>
+                {hotel.isLiveSearch && <span className="selected-badge">Live search</span>}
                 {isSelected && <span className="selected-badge">✓ Selected</span>}
-                <p className="muted">{'★'.repeat(hotel.starRating)} · {hotel.area}</p>
+                <p className="muted">{hotel.starRating > 0 ? `${'★'.repeat(hotel.starRating)} · ` : ''}{hotel.area}</p>
                 <p className="muted">{hotel.highlights}</p>
                 <div className="booking-links" onClick={(e) => e.stopPropagation()}>
                   <span className="muted">Book on: </span>
+                  {hotel.bookingUrl && <a href={hotel.bookingUrl} rel="noreferrer" target="_blank">Open live search</a>}
                   <a href={urls.booking} rel="noreferrer" target="_blank">Booking.com</a>
                   <a href={urls.hotels} rel="noreferrer" target="_blank">Hotels.com</a>
                   <a href={urls.expedia} rel="noreferrer" target="_blank">Expedia</a>
@@ -51,6 +61,7 @@ export function HotelSelectStep({ hotels, request, selected, onSelect, onBack }:
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <strong className="card-price">${hotel.estimatedNightlyPrice}/night</strong>
                 <p className="muted" style={{ fontSize: '0.85rem' }}>~${hotel.totalEstimatedPrice} total</p>
+                {hotel.priceLabel && <p className="muted" style={{ fontSize: '0.85rem' }}>{hotel.priceLabel}</p>}
               </div>
             </article>
           );

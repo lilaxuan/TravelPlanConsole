@@ -102,6 +102,38 @@ The fallback OpenAI client is instantiated with `dangerouslyAllowBrowser: true`.
 - Concurrent duplicate submissions share the same in-flight promise instead of starting duplicate model/API calls.
 - Backend `/generate` adds the durable DynamoDB cache and parallel OpenAI section prompts, so production traffic should set `VITE_GONOW_API_BASE_URL` and avoid browser-side OpenAI keys.
 
+### UX Architecture Goal
+
+The core product promise is to save more than 90% of planning time by turning one trip request into a guided workspace:
+
+- **One input surface:** destination, dates, budget, travelers, style, and constraints.
+- **Progressive sections:** flights, hotels, cars, itinerary, restaurants, and reminders should appear as each section is ready.
+- **Truth labels:** real provider offers are shown as provider-backed inventory; empty sections remain empty rather than being filled with fake options.
+- **AI recommendations:** AI should explain tradeoffs, build day plans, and personalize pacing after factual options are available.
+- **Decision flow:** users choose flight, hotel, optional car, then review a schedule built around those choices.
+
+Target interaction model:
+
+```
+TripHero form
+  -> planning workspace
+     -> Flights section appears first
+     -> Hotels section appears when ready
+     -> Cars section appears or can be skipped
+     -> AI itinerary adapts to selected logistics
+     -> Booking drawer opens provider links
+```
+
+Near-term implementation:
+- `POST /generate` returns Amadeus-backed flight and hotel offers for the existing wizard.
+- If provider credentials are missing, the backend returns a clear setup error instead of fake logistics.
+- Car rental inventory may be empty until a real car provider is configured.
+
+Long-term implementation:
+- `POST /trips` starts a progressive job.
+- `GET /trips/{tripId}` returns partial section statuses.
+- The wizard advances as soon as the next decision section is available, without waiting for the full itinerary.
+
 ### Wizard Steps
 1. **Trip details** (`TripForm`) — user fills departure, destination, dates, budget, travelers
 2. **Choose flight** (`FlightSelectStep`) — select from GPT-generated options

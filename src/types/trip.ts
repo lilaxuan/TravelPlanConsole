@@ -19,6 +19,10 @@ export interface FlightOption {
   estimatedPrice: number;
   duration: string;
   stops: string;       // e.g. "Nonstop" or "1 stop via LAX"
+  bookingUrl?: string;
+  isLiveSearch?: boolean;
+  priceLabel?: string;
+  recommendationReason?: string;
 }
 
 export interface HotelOption {
@@ -28,6 +32,9 @@ export interface HotelOption {
   totalEstimatedPrice: number;
   starRating: number;
   highlights: string; // e.g. "Free breakfast, rooftop pool"
+  bookingUrl?: string;
+  isLiveSearch?: boolean;
+  priceLabel?: string;
 }
 
 export interface CarRentalOption {
@@ -35,6 +42,8 @@ export interface CarRentalOption {
   estimatedTotalPrice: number;
   pickupLocation: string;
   bookingUrl: string;
+  isLiveSearch?: boolean;
+  priceLabel?: string;
 }
 
 export interface Activity {
@@ -92,4 +101,5 @@ export interface TripResult {
   travelTips: TravelTips;
   costSummary: CostSummary;
   createdAt: string;
+  warnings?: string[];
 }
