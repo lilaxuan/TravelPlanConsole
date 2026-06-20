@@ -7,6 +7,7 @@ export interface TripFormValues {
   endDate: string;
   budget: number;
   travelers: number;
+  planningMode: 'fast' | 'premium';
   departureIata?: string;   // e.g. "SEA" — resolved by ChatGPT
   destinationIata?: string; // e.g. "SFO"
 }

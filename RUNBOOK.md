@@ -19,7 +19,7 @@ TravelPlanConsole/
 │   │   ├── config.ts            # Reads env vars; exports { enableMocks, openAiApiKey, googleMapsApiKey, ... }
 │   │   ├── trips.ts             # createTrip() / getTrip() — in-memory tripStore + exact-request cache
 │   │   ├── chatgpt.ts           # callChatGPT() — calls OpenAI directly from browser
-│   │   ├── buildTravelPrompt.ts # Builds the GPT-4o prompt from TripFormValues
+│   │   ├── buildTravelPrompt.ts # Builds the configured OpenAI prompt from TripFormValues
 │   │   ├── bookingUrls.ts       # Generates deep-link booking URLs
 │   │   └── mockData.ts          # createMockTripResult() for local dev without API key
 │   ├── components/
@@ -58,7 +58,9 @@ All env vars are prefixed `VITE_` and read in `src/api/config.ts`.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `VITE_OPENAI_API_KEY` | `''` | OpenAI API key for browser-side GPT-4o calls |
+| `VITE_OPENAI_API_KEY` | `''` | OpenAI API key for browser-side OpenAI calls |
+| `VITE_OPENAI_FAST_MODEL` | `'gpt-4o'` | OpenAI model used when the user selects Fast response |
+| `VITE_OPENAI_PREMIUM_MODEL` | `'gpt-5.5'` | OpenAI model used when the user selects Premium recommendation |
 | `VITE_GOOGLE_MAPS_API_KEY` | `''` | Google Maps JavaScript API key for itinerary map rendering |
 | `VITE_GONOW_API_BASE_URL` | `''` | Optional backend HttpApi base URL for Account page → `GET /users/me` and public stats |
 | `VITE_GONOW_ENABLE_MOCKS` | `'true'` | `'true'` → use mock data; `'false'` → call OpenAI |
@@ -86,12 +88,12 @@ Live mode (`VITE_GONOW_ENABLE_MOCKS=false`):
 ```
 TripWizardPage → createTrip() → request cache / in-flight dedupe
                               → callChatGPT()
-                              → OpenAI GPT-4o generates itinerary/restaurants/tips
+                              → configured OpenAI model generates hotels/itinerary/restaurants/tips
                               → local static flight/hotel/car sections
                               → in-memory tripStore → getTrip()
 ```
 
-The OpenAI client is instantiated with `dangerouslyAllowBrowser: true`. The API key is exposed in the browser bundle — acceptable for local/demo use, not for production.
+The OpenAI client is instantiated with `dangerouslyAllowBrowser: true`. The API key and configured model are exposed in the browser bundle — acceptable for local/demo use, not for production.
 
 ### Latency Strategy
 - `trips.ts` keeps an exact-request session cache so repeated searches during one browser session return instantly.
@@ -193,8 +195,8 @@ npm run format
 |---------|---------|
 | `react` / `react-dom` 18 | UI framework |
 | `react-router-dom` v6 | Client-side routing |
-| `openai` v4 | GPT-4o API client (browser-side) |
-| `leaflet` + `react-leaflet` | Interactive map in ItineraryMap |
+| `openai` v4 | OpenAI API client (browser-side) |
+| `@react-google-maps/api` | Google Maps itinerary map |
 | `vite` v5 | Dev server + bundler |
 | `vitest` | Unit test runner |
 | `@testing-library/react` | Component testing utilities |

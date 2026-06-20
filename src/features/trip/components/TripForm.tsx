@@ -61,6 +61,36 @@ export function TripForm({ values, submitting, error, onChange, onSubmit }: Trip
         </label>
       </div>
 
+      <fieldset className="planning-mode-group">
+        <legend className="field-label">Recommendation mode</legend>
+        <label className={`planning-mode-option ${values.planningMode === 'fast' ? 'active' : ''}`}>
+          <input
+            type="radio"
+            name="planningMode"
+            value="fast"
+            checked={values.planningMode === 'fast'}
+            onChange={onChange}
+          />
+          <span>
+            <strong>Fast response</strong>
+            <small>Quicker itinerary draft for everyday planning.</small>
+          </span>
+        </label>
+        <label className={`planning-mode-option ${values.planningMode === 'premium' ? 'active' : ''}`}>
+          <input
+            type="radio"
+            name="planningMode"
+            value="premium"
+            checked={values.planningMode === 'premium'}
+            onChange={onChange}
+          />
+          <span>
+            <strong>Premium recommendation</strong>
+            <small>Higher-quality recommendations with slower generation.</small>
+          </span>
+        </label>
+      </fieldset>
+
       {error ? <div className="error-banner">{error}</div> : null}
 
       <button className="cta-button" disabled={submitting} type="submit">

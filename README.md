@@ -20,6 +20,8 @@ Create a `.env.local` file:
 VITE_GONOW_API_BASE_URL=https://example.execute-api.us-west-2.amazonaws.com/prod
 VITE_GONOW_ENABLE_MOCKS=true
 VITE_OPENAI_API_KEY=sk-...
+VITE_OPENAI_FAST_MODEL=gpt-4o
+VITE_OPENAI_PREMIUM_MODEL=gpt-5.5
 VITE_GOOGLE_MAPS_API_KEY=...
 ```
 

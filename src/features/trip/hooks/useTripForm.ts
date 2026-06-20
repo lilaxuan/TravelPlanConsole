@@ -20,6 +20,7 @@ function buildDefaultValues(): TripFormValues {
     endDate: toLocalISODate(inTwoWeeks),
     budget: 1500,
     travelers: 1,
+    planningMode: 'fast',
   };
 }
 

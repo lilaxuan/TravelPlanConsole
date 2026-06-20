@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { config } from '@/api/config';
 import { heroPhotos, destinationPhotos } from '@/styles/images';
 import { useScrollReveal } from '@/components/useScrollReveal';
 import { AnimatedCount } from '@/components/AnimatedCount';
@@ -106,7 +107,7 @@ export function TripHero({ children, onSelectDestination }: TripHeroProps): Reac
             <div className="stat-label">Countries covered</div>
           </div>
           <div className="stat" key="engine">
-            <div className="stat-value">GPT-4o</div>
+            <div className="stat-value stat-value--models">{config.openAiFastModel} / {config.openAiPremiumModel}</div>
             <div className="stat-label">AI itinerary engine</div>
           </div>
         </div>

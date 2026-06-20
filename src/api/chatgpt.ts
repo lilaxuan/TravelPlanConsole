@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { config } from '@/api/config';
-import { buildTravelPrompt } from '@/api/buildTravelPrompt';
+import { buildEnrichmentPrompt, buildItineraryPrompt } from '@/api/buildTravelPrompt';
 import { buildStaticTripSections } from '@/api/staticTripSections';
 import type { HotelOption, TripFormValues, TripResult } from '@/types/trip';
 
@@ -14,26 +14,19 @@ function getClient(): OpenAI {
 }
 
 export async function callChatGPT(input: TripFormValues, tripId: string): Promise<TripResult> {
-  const prompt = buildTravelPrompt(input);
+  const model = modelForPlanningMode(input.planningMode);
+  const itineraryPrompt = buildItineraryPrompt(input);
 
-  const completion = await getClient().chat.completions.create({
-    model: 'gpt-4o',
-    response_format: { type: 'json_object' },
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.7,
-    max_tokens: 5000,
-  });
-
-  const raw = completion.choices[0]?.message?.content ?? '{}';
-  const parsed = JSON.parse(raw) as Pick<TripResult, 'hotels' | 'itinerary' | 'restaurants' | 'travelTips'>;
+  const itineraryPayload = await requestJson<Pick<TripResult, 'hotels' | 'itinerary'>>(model, itineraryPrompt);
   const staticSections = buildStaticTripSections(input);
-  const hotels = normalizeHotels(parsed.hotels, staticSections.hotels);
+  const hotels = normalizeHotels(itineraryPayload.hotels, staticSections.hotels);
   const hotelTotal = hotels[0]?.totalEstimatedPrice ?? staticSections.costSummary.hotels;
   const costSummary = {
     ...staticSections.costSummary,
     hotels: hotelTotal,
     total: staticSections.costSummary.total - staticSections.costSummary.hotels + hotelTotal,
   };
+  const { restaurants, travelTips, warnings } = await generateEnrichment(input, model);
 
   return {
     tripId,
@@ -47,10 +40,60 @@ export async function callChatGPT(input: TripFormValues, tripId: string): Promis
     flights: staticSections.flights,
     hotels,
     carRentals: staticSections.carRentals,
-    itinerary: parsed.itinerary ?? [],
-    restaurants: parsed.restaurants ?? [],
-    travelTips: parsed.travelTips ?? { bestSeasonSummary: '', visaGuidance: '', localTip: '' },
+    itinerary: itineraryPayload.itinerary ?? [],
+    restaurants,
+    travelTips,
     costSummary,
+    warnings,
+  };
+}
+
+async function requestJson<T>(model: string, prompt: string): Promise<T> {
+  const completion = await getClient().chat.completions.create({
+    model,
+    response_format: { type: 'json_object' },
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const raw = completion.choices[0]?.message?.content ?? '{}';
+  return JSON.parse(raw) as T;
+}
+
+async function generateEnrichment(
+  input: TripFormValues,
+  model: string,
+): Promise<Pick<TripResult, 'restaurants' | 'travelTips' | 'warnings'>> {
+  try {
+    const enrichment = await requestJson<Pick<TripResult, 'restaurants' | 'travelTips'>>(
+      model,
+      buildEnrichmentPrompt(input),
+    );
+    return {
+      restaurants: enrichment.restaurants ?? [],
+      travelTips: enrichment.travelTips ?? fallbackTravelTips(input),
+      warnings: [],
+    };
+  } catch (error) {
+    return {
+      restaurants: [],
+      travelTips: fallbackTravelTips(input),
+      warnings: [error instanceof Error ? `Restaurant and travel tip generation failed: ${error.message}` : 'Restaurant and travel tip generation failed.'],
+    };
+  }
+}
+
+function modelForPlanningMode(mode: TripFormValues['planningMode']): string {
+  return mode === 'premium' ? config.openAiPremiumModel : config.openAiFastModel;
+}
+
+function fallbackTravelTips(input: TripFormValues): TripResult['travelTips'] {
+  return {
+    bestSeasonSummary: `Check seasonal conditions for ${input.destinationCity} before departure.`,
+    visaGuidance: 'Confirm official entry and visa requirements based on your citizenship before booking.',
+    localTip: 'Keep the first day flexible and verify opening hours for major attractions.',
+    weatherSummary: 'Review the forecast shortly before departure.',
+    clothingRecommendations: 'Pack comfortable walking shoes and layers.',
+    preTravelReminders: ['Confirm bookings', 'Save offline maps', 'Check airport and local transport options'],
   };
 }
 

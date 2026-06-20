@@ -1,6 +1,24 @@
 import type { TripFormValues } from '@/types/trip';
 
-export function buildTravelPrompt(input: TripFormValues): string {
+function tripLengthInNights(input: TripFormValues): number {
+  return Math.max(
+    1,
+    Math.round((new Date(input.endDate).getTime() - new Date(input.startDate).getTime()) / 86_400_000),
+  );
+}
+
+function tripContext(input: TripFormValues): string {
+  const nights = tripLengthInNights(input);
+  return `Trip details:
+- Departure: ${input.departureCity}
+- Destination: ${input.destinationCity}
+- Dates: ${input.startDate} to ${input.endDate} (${nights} nights)
+- Budget: $${input.budget} USD total
+- Travelers: ${input.travelers}
+- Planning mode: ${input.planningMode}`;
+}
+
+export function buildItineraryPrompt(input: TripFormValues): string {
   const nights =
     Math.round(
       (new Date(input.endDate).getTime() - new Date(input.startDate).getTime()) / 86_400_000,
@@ -8,19 +26,12 @@ export function buildTravelPrompt(input: TripFormValues): string {
 
   return `You are a professional travel planner. Generate the itinerary first, including hotel-base recommendations, as a single JSON object (no markdown, no extra text).
 
-Trip details:
-- Departure: ${input.departureCity}
-- Destination: ${input.destinationCity}
-- Dates: ${input.startDate} to ${input.endDate} (${nights} nights)
-- Budget: $${input.budget} USD total
-- Travelers: ${input.travelers}
+${tripContext(input)}
 
 Return ONLY valid JSON matching this exact TypeScript shape:
 {
   "hotels": [{ "name": string, "area": string, "estimatedNightlyPrice": number, "totalEstimatedPrice": number, "starRating": number, "highlights": string }],
-  "itinerary": [{ "dayNumber": number, "theme": string, "activities": [{ "time": string, "name": string, "type": string, "notes": string | undefined, "transportFromPrevious": string | undefined, "lat": number, "lng": number }] }],
-  "restaurants": [{ "name": string, "cuisine": string, "priceRange": string, "reservationRecommended": boolean, "reservationUrl": string | undefined, "photoQuery": string }],
-  "travelTips": { "bestSeasonSummary": string, "visaGuidance": string, "localTip": string, "weatherSummary": string, "clothingRecommendations": string, "preTravelReminders": string[] }
+  "itinerary": [{ "dayNumber": number, "theme": string, "activities": [{ "time": string, "name": string, "type": string, "notes": string | undefined, "transportFromPrevious": string | undefined, "lat": number, "lng": number }] }]
 }
 
 Requirements:
@@ -39,8 +50,28 @@ Requirements:
 - "notes" must explain why the stop fits the user's destination, dates, budget, and traveler count, plus any reservation/ticket timing advice.
 - Use activity "type" values such as "attraction", "restaurant", "culture", "nature", "shopping", "viewpoint", "transport", or "free_time".
 - Include meals as activities when they are part of the day's flow, and make those meal stops match the restaurants list when sensible.
-- Keep the pacing realistic for ${input.travelers} traveler${input.travelers === 1 ? '' : 's'} and leave buffers between major stops.
+- Keep the pacing realistic for ${input.travelers} traveler${input.travelers === 1 ? '' : 's'} and leave buffers between major stops.`;
+}
+
+export function buildEnrichmentPrompt(input: TripFormValues): string {
+  return `You are a professional travel planner. Generate restaurants and practical travel tips as a single JSON object (no markdown, no extra text).
+
+${tripContext(input)}
+
+Return ONLY valid JSON matching this exact TypeScript shape:
+{
+  "restaurants": [{ "name": string, "cuisine": string, "priceRange": string, "reservationRecommended": boolean, "reservationUrl": string | undefined, "photoQuery": string }],
+  "travelTips": { "bestSeasonSummary": string, "visaGuidance": string, "localTip": string, "weatherSummary": string, "clothingRecommendations": string, "preTravelReminders": string[] }
+}
+
+Requirements:
+- Recommend 4-6 real restaurants in ${input.destinationCity} across different neighborhoods, cuisines, and price levels.
+- Prefer restaurants that fit the destination, dates, budget, and ${input.travelers} traveler${input.travelers === 1 ? '' : 's'}.
+- Include a useful "photoQuery" for each restaurant, such as "[restaurant name] ${input.destinationCity} food".
+- Use reservationUrl only when a direct official or well-known reservation page is likely. Otherwise omit it.
 - Include weather forecast summary for the travel dates and clothing recommendations
 - Include visa requirements for common passport holders traveling from ${input.departureCity} to ${input.destinationCity}
 - Include pre-travel reminders (vaccinations, currency, SIM card, etc.)`;
 }
+
+export const buildTravelPrompt = buildItineraryPrompt;

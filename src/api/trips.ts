@@ -19,6 +19,7 @@ function buildRequestKey(input: TripFormValues): string {
     endDate: input.endDate,
     budget: Number(input.budget),
     travelers: Number(input.travelers),
+    planningMode: input.planningMode,
   });
 }
 
